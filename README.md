@@ -1,4 +1,4 @@
-# Download (Twitter/X Video İndirici)
+# Download
 
 Twitter/X'ten video indirme aracı. Yapıştırılan tweet linkindeki mevcut çözünürlükleri listeler, seçilen kalitede indirir.
 
