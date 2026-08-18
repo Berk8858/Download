@@ -1,4 +1,4 @@
-# Download - Twitter/X Video Indirici
+# Download (Twitter/X Video İndirici)
 
 Twitter/X'ten video indirme aracı. Yapıştırılan tweet linkindeki mevcut çözünürlükleri listeler, seçilen kalitede indirir.
 
@@ -37,3 +37,28 @@ chmod +x Download-linux-x86_64
 ```
 
 Not: Tek dosya sürümü yt-dlp + ffmpeg'i kendi içinde barındırır, ayrı kurulum gerekmez.
+
+## Terminalden İndirme ve Kurma
+
+### Seçenek 1: Hazır tek dosya (önerilen)
+```bash
+curl -sL https://github.com/Berk8858/Download/releases/latest/download/Download-linux-x86_64 -o Download
+chmod +x Download
+./Download
+```
+
+### Seçenek 2: Kaynak kodu klonla
+```bash
+git clone https://github.com/Berk8858/Download.git
+cd Download
+pip install --user yt-dlp
+python3 download.py
+```
+
+### Seçenek 3: Repoyu ZIP indir (git olmadan)
+```bash
+wget https://github.com/Berk8858/Download/archive/refs/heads/main.zip
+unzip main.zip && cd Download-main
+pip install --user yt-dlp
+python3 download.py
+```
