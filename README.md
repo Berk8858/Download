@@ -26,3 +26,14 @@ pip install --user yt-dlp
 ```bash
 python3 download.py
 ```
+
+## Hazır Kurulum (Linux - tek dosya)
+Kaynak kodla uğraşmadan direkt çalıştırmak için **Releases** bölümünden indir:
+`Download-linux-x86_64` (tek çalıştırılabilir dosya, ~50 MB)
+
+```bash
+chmod +x Download-linux-x86_64
+./Download-linux-x86_64
+```
+
+Not: Tek dosya sürümü yt-dlp + ffmpeg'i kendi içinde barındırır, ayrı kurulum gerekmez.
