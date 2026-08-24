@@ -2,55 +2,88 @@
 
 Twitter/X'ten video indirme aracı. Yapıştırılan tweet linkindeki mevcut çözünürlükleri listeler, seçilen kalitede indirir.
 
+## v1.2 Güncelleme (2026-08-24)
+- Tüm tarayıcılar destekleniyor
+- Tarayıcı seçim dropdown'ı eklendi
+- Otomatik tarayıcı algılama
+
+## Desteklenen Tarayıcılar
+| Tarayıcı | Durum |
+|----------|-------|
+| Firefox / Firefox ESR | ✅ |
+| Google Chrome | ✅ |
+| Chromium | ✅ |
+| Brave Browser | ✅ |
+| Microsoft Edge | ✅ |
+| Opera / Opera GX | ✅ |
+| Vivaldi | ✅ |
+
+## Desteklenen Linux Dağıtımları
+| Dağıtıma | Minimum Versiyon |
+|----------|------------------|
+| Fedora | 36+ |
+| Ubuntu | 20.04+ |
+| Debian | 11+ |
+| Linux Mint | 20+ |
+| Arch Linux / Manjaro | Rolling |
+| openSUSE Leap | 15+ |
+| Pop!_OS | 22.04+ |
+| Elementary OS | 7+ |
+
 ## Özellikler
-- Link yapıştır (Paste butonu, sağ tık, Ctrl+V) ve Clear ile temizle
-- Mevcut çözünürlükleri listele (En iyi kalite, 720p, 360p, 270p, Sadece ses MP3)
-- Seçilen çözünürlükte indir
-- İlerleme çubuğu ve durum göstergesi
-- Kayıt klasörü seçimi (varsayılan: sistem indirme klasörü otomatik bulunur)
-- İptal desteği
-- Brave tarayıcı cookies desteği
+- Tweet/X linkinden video indirme
+- Çözünurlük seçimi (en iyi kalite, 720p, 480p, sadece ses)
+- Tarayıcı seçimi (otomatik algılama)
+- Brave/Firefox/Chrome vb. cookies desteği
 - Türkçe hata mesajları
+- İlerleme çubuğu
+- Otomatik dosya adlandırma
 
-## Gereksinimler
-- Python 3 + Tkinter
-- yt-dlp
-- ffmpeg
-- secretstorage (Brave cookies için)
+## Terminalden Kurulum
 
-## Kurulum (Debian/Fedora tabanlı)
+### Fedora
 ```bash
-sudo apt install python3-tk ffmpeg   # Debian/Ubuntu
-sudo dnf install python3-tk ffmpeg   # Fedora
+sudo dnf install python3-tkinter ffmpeg
 pip install --user yt-dlp secretstorage
-```
-
-## Kullanım
-```bash
 python3 twitter-indirici.py
 ```
 
-## Hazır Kurulum (Linux - tek dosya)
-Kaynak kodla uğraşmadan direkt çalıştırmak için **Releases** bölümünden indir:
-`Download-linux-x86_64` (tek çalıştırılabilir dosya, ~50 MB)
-
+### Debian / Ubuntu / Linux Mint
 ```bash
-chmod +x Download-linux-x86_64
-./Download-linux-x86_64
+sudo apt install python3-tk ffmpeg
+pip install --user yt-dlp secretstorage
+python3 twitter-indirici.py
 ```
 
-Not: Tek dosya sürümü yt-dlp + ffmpeg'i kendi içinde barındırır, ayrı kurulum gerekmez.
+### Arch Linux / Manjaro
+```bash
+sudo pacman -S python tk ffmpeg
+pip install --user yt-dlp secretstorage
+python3 twitter-indirici.py
+```
 
-## Terminalden İndirme ve Kurma
+### openSUSE
+```bash
+sudo zypper install python3-tk ffmpeg
+pip install --user yt-dlp secretstorage
+python3 twitter-indirici.py
+```
 
-### Seçenek 1: Hazır tek dosya (önerilen)
+## Gereksinimler
+- Python 3.8+
+- tkinter (GUI)
+- yt-dlp (video indirme)
+- ffmpeg (video birlestirme)
+- secretstorage (Linux keyring erisimi)
+
+## Hazır Kurulum (Linux - tek dosya)
 ```bash
 curl -sL https://github.com/Berk8858/Download/releases/latest/download/Download-linux-x86_64 -o Download
 chmod +x Download
 ./Download
 ```
 
-### Seçenek 2: Kaynak kodu klonla
+## Kaynak Kodu Klonla
 ```bash
 git clone https://github.com/Berk8858/Download.git
 cd Download
@@ -58,7 +91,7 @@ pip install --user yt-dlp secretstorage
 python3 twitter-indirici.py
 ```
 
-### Seçenek 3: Repoyu ZIP indir (git olmadan)
+## ZIP İndir
 ```bash
 wget https://github.com/Berk8858/Download/archive/refs/heads/main.zip
 unzip main.zip && cd Download-main
@@ -67,11 +100,14 @@ python3 twitter-indirici.py
 ```
 
 ## Versiyonlar
+### v1.2 (2026-08-24)
+- Tüm tarayıcılar destekleniyor (Firefox, Chrome, Brave, Edge, Opera, Vivaldi, Chromium)
+- Tarayıcı seçim dropdown'ı
+- Otomatik tarayıcı algılama
 
 ### v1.1 (2026-08-24)
-- Brave tarayıcı desteği eklendi
-- Türkçe hata mesajları eklendi
-- `cookiesfrombrowser` özelliği
+- Brave tarayıcı desteği
+- Türkçe hata mesajları
 
 ### v1.0
 - İlk versiyon
@@ -80,5 +116,4 @@ python3 twitter-indirici.py
 - GUI arayüzü
 
 ## Lisans
-
 MIT

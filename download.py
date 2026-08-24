@@ -3,25 +3,77 @@
 Twitter/X Video Indirici - GUI
 yt-dlp tabanli cozunurluk sec + indir
 
-Versiyon: 1.1
-Degisiklikler:
-  - v1.1 (2026-08-24): Brave tarayici destegi eklendi
+=== VERSIYON 1.2 (2026-08-24) ===
+
+DEGISIKLIKLER:
+  - v1.2: Tum tarayicilar destekleniyor
+  - v1.2: Tarayici secim dropdown'i eklendi
+  - v1.2: Otomatik tarayici algilama
+  - v1.1: Brave tarayici destegi eklendi
   - v1.1: Turkce hata mesajlari eklendi
-  - v1.1: Cookies-from-browser ozelligi
-  - v1.0: Ilk versiyon - Firefox destegi
+  - v1.0: Ilk versiyon
+
+DESTEKLENEN TARAYICILAR:
+  - Firefox / Firefox ESR
+  - Google Chrome / Chromium
+  - Brave Browser
+  - Microsoft Edge
+  - Opera / Opera GX
+  - Vivaldi
+
+DESTEKLENEN LINUX DAGONLARLARI:
+  - Fedora 36+
+  - Ubuntu 20.04+
+  - Debian 11+
+  - Linux Mint 20+
+  - Arch Linux / Manjaro
+  - openSUSE Leap 15+
+  - Pop!_OS 22.04+
+  - Elementary OS 7+
+
+TERMINALDEN KURULUM (Fedora):
+  sudo dnf install python3-tkinter ffmpeg
+  pip install --user yt-dlp secretstorage
+  python3 twitter-indirici.py
+
+TERMINALDEN KURULUM (Debian/Ubuntu/Mint):
+  sudo apt install python3-tk ffmpeg
+  pip install --user yt-dlp secretstorage
+  python3 twitter-indirici.py
+
+TERMINALDEN KURULUM (Arch/Manjaro):
+  sudo pacman -S python tk ffmpeg
+  pip install --user yt-dlp secretstorage
+  python3 twitter-indirici.py
+
+GEREKLI BAGIMLILIKLAR:
+  - Python 3.8+
+  - tkinter (GUI)
+  - yt-dlp (video indirme)
+  - ffmpeg (video birlestirme)
+  - secretstorage (Linux keyring erisimi, tarayici cookies icin)
+
+Lisans: MIT
 """
 
 import os
 import re
-import threading
-import subprocess
 import shutil
-import queue
+import subprocess
 import sys
+import queue
+import threading
 from pathlib import Path
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+from tkinter.scrolledtext import ScrolledText
+
+try:
+    from yt_dlp import YoutubeDL
+    HAS_YTDLP = True
+except ImportError:
+    HAS_YTDLP = False
 
 # Turkce hata cevirileri
 HATA_CEVRIR = {
@@ -44,24 +96,47 @@ HATA_CEVRIR = {
     "Not a valid URL": "Gecersiz URL",
 }
 
+TARAYICI_ISIMLERI = {
+    "firefox": "Firefox",
+    "chrome": "Google Chrome",
+    "brave": "Brave",
+    "chromium": "Chromium",
+    "edge": "Microsoft Edge",
+    "opera": "Opera",
+    "vivaldi": "Vivaldi",
+    "YOK": "Tarayici Yok (cookies kullanilmayacak)",
+}
+
 def cevir_hata(hata_metni):
-    """Ingilizce hata mesajini Turkceye cevir"""
     for en, tr in HATA_CEVRIR.items():
         if en.lower() in hata_metni.lower():
             return tr
     return hata_metni
-from tkinter.scrolledtext import ScrolledText
 
-try:
-    from yt_dlp import YoutubeDL
-    HAS_YTDLP = True
-except ImportError:
-    HAS_YTDLP = False
+def tarayici_bul():
+    """Yuklu tarayicilari algila"""
+    bulunanlar = []
+    
+    linux_tarayicilar = {
+        "firefox": ["firefox", "firefox-esr"],
+        "chrome": ["google-chrome", "google-chrome-stable"],
+        "brave": ["brave-browser", "brave"],
+        "chromium": ["chromium", "chromium-browser"],
+        "edge": ["microsoft-edge", "microsoft-edge-stable"],
+        "opera": ["opera", "opera-stable"],
+        "vivaldi": ["vivaldi", "vivaldi-stable"],
+    }
+    
+    for tarayici_adi, komutlar in linux_tarayicilar.items():
+        for komut in komutlar:
+            if shutil.which(komut):
+                bulunanlar.append(tarayici_adi)
+                break
+    
+    return bulunanlar
 
 def _varsayilan_indirme_klasoru():
-    """XDG kullanici indirme klasorunu bul (ornek: ~/Indirilenler)."""
     try:
-        import subprocess
         sonuc = subprocess.run(["xdg-user-dir", "DOWNLOAD"], capture_output=True,
                                text=True, timeout=5)
         yol = sonuc.stdout.strip()
@@ -78,9 +153,9 @@ INDIRME_KONUMU = _varsayilan_indirme_klasoru()
 class TwitterIndirici(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Twitter/X Video Indirici")
-        self.geometry("680x680")
-        self.minsize(620, 580)
+        self.title("Twitter/X Video Indirici v1.2")
+        self.geometry("700x720")
+        self.minsize(640, 620)
 
         self.msg_queue = queue.Queue()
         self.isleniyor = False
@@ -88,6 +163,8 @@ class TwitterIndirici(tk.Tk):
         self._ytdl = None
         self.cozunurlukler = []
         self.analiz_url = ""
+
+        self.bulunan_tarayicilar = tarayici_bul()
 
         self._kontrol_yukleme()
         self._arayuz_kur()
@@ -112,6 +189,31 @@ class TwitterIndirici(tk.Tk):
         ttk.Button(url_satir, text="Clear", width=6,
                    command=self._pano_temizle).pack(side="left", padx=(4, 0))
 
+        tarayici_satir = ttk.Frame(ust)
+        tarayici_satir.pack(fill="x", pady=(2, 4))
+        ttk.Label(tarayici_satir, text="Tarayici:").pack(side="left")
+        
+        self.tarayici_var = tk.StringVar()
+        tarayici_secenekler = []
+        for t in self.bulunan_tarayicilar:
+            isim = TARAYICI_ISIMLERI.get(t, t)
+            tarayici_secenekler.append(isim)
+        
+        if not tarayici_secenekler:
+            tarayici_secenekler = ["Tarayici bulunamadi"]
+        
+        self.tarayici_combo = ttk.Combobox(
+            tarayici_satir, 
+            textvariable=self.tarayici_var,
+            values=tarayici_secenekler,
+            state="readonly",
+            width=25
+        )
+        self.tarayici_combo.pack(side="left", padx=6)
+        
+        if tarayici_secenekler:
+            self.tarayici_combo.current(0)
+        
         buton_satir = ttk.Frame(ust)
         buton_satir.pack(fill="x")
 
@@ -156,6 +258,14 @@ class TwitterIndirici(tk.Tk):
         self.log = ScrolledText(self, height=7, state="disabled",
                                 font=("Consolas", 9), wrap="word")
         self.log.pack(fill="both", expand=True, padx=12, pady=(4, 10))
+
+    def _secilen_tarayici(self):
+        """Secili tarayici adini dondur"""
+        secim = self.tarayici_var.get()
+        for kod, isim in TARAYICI_ISIMLERI.items():
+            if isim == secim:
+                return kod
+        return None
 
     def _kontrol_yukleme(self):
         eksik = []
@@ -250,8 +360,13 @@ class TwitterIndirici(tk.Tk):
                 "quiet": True,
                 "no_warnings": True,
                 "noplaylist": True,
-                "cookiesfrombrowser": ("brave",),
             }
+            
+            tarayici = self._secilen_tarayici()
+            if tarayici and tarayici != "YOK":
+                opts["cookiesfrombrowser"] = (tarayici,)
+                self.msg_queue.put(("log", f"Tarayici: {TARAYICI_ISIMLERI.get(tarayici, tarayici)}"))
+            
             with YoutubeDL(opts) as ydl:
                 self._ytdl = ydl
                 info = ydl.extract_info(url, download=False)
@@ -370,8 +485,11 @@ class TwitterIndirici(tk.Tk):
             "noprogress": True,
             "retries": 3,
             "fragment_retries": 3,
-            "cookiesfrombrowser": ("brave",),
         }
+        
+        tarayici = self._secilen_tarayici()
+        if tarayici and tarayici != "YOK":
+            opts["cookiesfrombrowser"] = (tarayici,)
 
         if ses_mi:
             opts["postprocessors"] = [{
