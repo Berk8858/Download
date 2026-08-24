@@ -1650,31 +1650,27 @@ class TwitterIndirici(tk.Tk):
 
     def _guncelleme_kontrol(self):
         try:
-            import subprocess
-            sonuc = subprocess.run(
-                ["git", "ls-remote", "--tags", "https://github.com/Berk8858/Download.git"],
-                capture_output=True, text=True, timeout=15
-            )
-            if sonuc.returncode != 0:
-                raise Exception("git ls-remote failed")
-            
+            import urllib.request
+            import json
+
+            url = "https://api.github.com/repos/Berk8858/Download/releases"
+            req = urllib.request.Request(url, headers={"Accept": "application/vnd.github.v3+json"})
+            data = json.loads(urllib.request.urlopen(req, timeout=15).read())
+
             tagler = []
-            for satir in sonuc.stdout.strip().split("\n"):
-                if satir and "refs/tags/v" in satir:
-                    parts = satir.split("refs/tags/v")
-                    if len(parts) > 1:
-                        tag = parts[1].split("^{}")[0].strip()
-                        if tag and "." in tag:
-                            tagler.append(tag)
-            
+            for r in data:
+                tag = r.get("tag_name", "")
+                if tag.startswith("v") and "." in tag:
+                    tagler.append(tag[1:])
+
             if not tagler:
                 raise Exception("No tags found")
-            
+
             def versiyon_parse(v):
                 return tuple(int(x) for x in v.split("."))
-            
+
             son_versiyon = max(tagler, key=versiyon_parse)
-            
+
             if son_versiyon and son_versiyon != VERSION:
                 cevap = messagebox.askyesno(
                     self._t("update_title"),
