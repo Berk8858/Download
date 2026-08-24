@@ -1,23 +1,25 @@
 # Degisiklik Kaydi
 
+## v1.5 (2026-08-24)
+
+### Yeni Ozellikler
+- **Multi Downloader** olarak yeniden adlandirma
+- **Coklu platform destegi** — YouTube, Instagram, TikTok, Facebook, Twitter/X, Reddit, Pinterest, Vimeo, Dailymotion, Twitch ve 1000+ site
+- **Platform otomatik algilama** — Linki yapistirin, platformu otomatik tanir
+- **Yeni multi-platform icon** — 4 platform simgesi (YouTube, Instagram, TikTok, Twitter)
+
+### Iyilestirmeler
+- Tum dil cevirileri guncellendi
+- URL etiketi tum platformlari gosterecek sekilde genisletildi
+
+---
+
 ## v1.4 (2026-08-24)
 
 ### Yeni Ozellikler
-- **Otomatik tarayici algilama** — Twitter'a giris yapilmis tarayiciyi otomatik bulur
-- **Kurulum scripti** — Tek komutla tum Linux distrolarina kurulum (`bash kur.sh`)
-- **Coklu dil destegi** — 7 dil (Turkce, Ispanyolca, Portekizce, Italyanca, Japonca, Korece, Cince)
-- **OS dil algilama** — Isletim sistemi diline gore otomatik secim
-- **Yardim menusu** — Hakkinda, Kisayollar, Guncelleme Kontrolu, GitHub Sayfasi
-- **Pencere ikonu** — Modern multi-download ikonu
-
-### Iyilestirmeler
-- Tarayici secici kaldirildi — tamamen otomatik
-- Cookie kontrolu — Hangi tarayicida Twitter session varsa onu kullanir
-- Arayuz temizlendi — Gereksiz elementler kaldirildi
-
-### Duzeltmeler
-- GNOME uyumlulugu — Pencere ikonu GNOME 50+ ile uyumlu
-- Dildegistirme sorunu cozuldu
+- Otomatik tarayici algilama
+- Kurulum scripti (kur.sh)
+- 7 dil destegi
 
 ---
 
@@ -26,16 +28,15 @@
 ### Yeni Ozellikler
 - Coklu dil destegi (7 dil)
 - Bayrakli dil secici
-- Help menusu (Info, Kisayollar, Guncelleme Kontrolu)
+- Help menusu
 
 ---
 
 ## v1.2 (2026-08-24)
 
 ### Yeni Ozellikler
-- Tum tarayicilar destekleniyor (Firefox, Chrome, Brave, Chromium, Edge, Opera, Vivaldi)
+- Tum tarayicilar destekleniyor
 - Linux dagitim listesi
-- Terminal kurulumu
 
 ---
 

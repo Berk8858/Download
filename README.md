@@ -1,26 +1,40 @@
-# Twitter/X Video Indirici
+# Multi Downloader
 
-Tweet, video ve GIF'leri kolayca indirin.
+1000+ siteden video indirme araci.
 
-![Versiyon](https://img.shields.io/badge/versiyon-1.4-blue)
+![Versiyon](https://img.shields.io/badge/versiyon-1.5-blue)
 ![Lisans](https://img.shields.io/badge/lisans-MIT-green)
-![Linux](https://img.shields.io/badge/linux-tum%C3%BC%20dag%C4%B1t%C4%B1mlar-yellow)
+![Linux](https://img.shields.io/badge/linux-tum%20dag%20t%20mlar-yellow)
+
+## Desteklenen Platformlar
+
+| Platform | Destek |
+|----------|--------|
+| YouTube | ✅ Video, Shorts, Music |
+| Instagram | ✅ Video, Reels, Stories |
+| TikTok | ✅ Video |
+| Facebook | ✅ Video |
+| Twitter/X | ✅ Video, GIF |
+| Reddit | ✅ Video |
+| Pinterest | ✅ Video |
+| Vimeo | ✅ Video |
+| Dailymotion | ✅ Video |
+| Twitch | ✅ Video |
+| VE 1000+ SITE | ✅ yt-dlp destekliyor |
 
 ## Ozellikler
 
-- Tweet video ve GIF'lerini indirme
-- Cozunurluk secimi (otomatik en iyi kalite)
-- Sadece ses indirme (MP3)
+- Video ve ses indirme (MP4, MP3)
+- Cozunurluk secimi (144p - 4K)
 - Coklu dil destegi (7 dil)
 - Otomatik tarayici algilama
-- Modern GUI arayuzu
+- Linux uyumlu (Fedora, Ubuntu, Debian, Mint, Arch...)
 
 ## Kurulum
 
 ### Yontem 1: Otomatik Kurulum (Onerilen)
 
 ```bash
-# Dosyalari indirin ve calistirin
 git clone https://github.com/Berk8858/Download.git
 cd Download
 bash kur.sh
@@ -29,38 +43,18 @@ bash kur.sh
 ### Yontem 2: Manuel Kurulum
 
 ```bash
-# Bagimliliklari yukleyin
 pip3 install --user yt-dlp
 sudo apt install ffmpeg python3-tk  # Debian/Ubuntu
 sudo dnf install ffmpeg python3-tkinter  # Fedora
-
-# Programi calistirin
 python3 twitter-indirici.py
 ```
 
 ## Kullanim
 
-1. Tweet linkini yapistirin
+1. Video linkini yapistirin
 2. "Cozunurlukleri Getir" butonuna tiklayin
-3. Istediniz cozunurlugu secin
+3. Istediginiz cozunurlugu secin
 4. "INDIR" butonuna tiklayin
-
-## Gereksinimler
-
-- Python 3.8+
-- yt-dlp
-- ffmpeg
-- tkinter
-
-## Desteklenen Diller
-
-- Turkce
-- Ispanyolca
-- Portekizce
-- Italyanca
-- Japonca
-- Korece
-- Cince
 
 ## Lisans
 

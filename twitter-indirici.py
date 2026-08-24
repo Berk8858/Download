@@ -1,34 +1,24 @@
 #!/usr/bin/env python3
 """
-Twitter/X Video Indirici - GUI
-yt-dlp tabanli cozunurluk sec + indir
+Multi Downloader - GUI
+yt-dlp tabanli coklu platform video indirici
 
-=== VERSIYON 1.3 (2026-08-24) ===
+=== VERSIYON 1.5 (2026-08-24) ===
+
+DESTEKLENEN PLATFORMLAR:
+  YouTube, Instagram, TikTok, Facebook, Twitter/X, Reddit,
+  Pinterest, Vimeo, Dailymotion, Twitch, ve 1000+ site (yt-dlp)
 
 DEGISIKLIKLER:
-  - v1.3: ttkbootstrap ile modern arayuz
+  - v1.5: Multi Downloader olarak yeniden adlandirma
+  - v1.5: Coklu platform destegi (YouTube, Instagram, TikTok, vb.)
+  - v1.5: Platform otomatik algilama
+  - v1.5: Desteklenen platformlar listesi
+  - v1.4: Otomatik tarayici algilama
+  - v1.4: Kurulum scripti (kur.sh)
   - v1.3: Coklu dil destegi (7 dil)
-  - v1.3: Bayrakli dil secici (emoji destekli)
-  - v1.3: Help menusu (Info, Kisayollar, Guncelleme kontrolu)
-  - v1.3: OS dil algilama (otomatik secim)
   - v1.2: Tum tarayicilar destekleniyor
-  - v1.1: Brave tarayici destegi + Turkce hata mesajlari
   - v1.0: Ilk versiyon
-
-DESTEKLENEN DILLER:
-  - 🇹🇷 Turkce (varsayilan)
-  - 🇪🇸 Ispanyolca (Espanol)
-  - 🇧🇷 Portekizce (Portugues)
-  - 🇮🇹 Italyanca (Italiano)
-  - 🇯🇵 Japonca (日本語)
-  - 🇰🇷 Korece (한국어)
-  - 🇨🇳 Cince (中文)
-
-DESTEKLENEN TARAYICILAR:
-  Firefox, Chrome, Chromium, Brave, Edge, Opera, Vivaldi
-
-DESTEKLENEN LINUX DAGONLARLARI:
-  Fedora, Ubuntu, Debian, Mint, Arch, Manjaro, openSUSE, Pop!_OS, Elementary
 
 Lisans: MIT
 """
@@ -55,8 +45,8 @@ except ImportError:
 # ============================================================
 # VERSIYON
 # ============================================================
-VERSION = "1.4"
-APP_NAME = "Twitter/X Video Indirici"
+VERSION = "1.5"
+APP_NAME = "Multi Downloader"
 GITHUB_URL = "https://github.com/Berk8858/Download"
 
 # ============================================================
@@ -87,8 +77,8 @@ BAYRAK_RENKLERI = {
 # ============================================================
 CEVIRILER = {
     "tr": {
-        "app_title": "Twitter/X Video Indirici",
-        "url_label": "Tweet / X linki:",
+        "app_title": "Multi Downloader",
+        "url_label": "Video linki (YouTube, Instagram, TikTok, Twitter...):",
         "paste": "Yapistir",
         "clear": "Temizle",
         "browser_label": "Tarayici:",
@@ -115,7 +105,7 @@ CEVIRILER = {
         "log_browser": "Tarayici:",
         "log_link": "Link:",
         "msg_no_url": "Link gerekli",
-        "msg_no_url_detail": "Tweet / X linki yapistir.",
+        "msg_no_url_detail": "Video linkini yapistirin.",
         "msg_no_selection": "Secim yok",
         "msg_no_selection_detail": "Once bir cozunurluk sec.",
         "msg_paste_empty": "Pano bos",
@@ -130,7 +120,7 @@ CEVIRILER = {
         "no_browser_detail": "Video indirmek icin bir tarayici gerekli.\n\nTarayici kurduktan sonra programi yeniden baslatin.",
         # Hata mesajlari
         "err_unavailable": "Video mevcut degil (silinmis veya gizli)",
-        "err_no_video": "Bu tweet'te video bulunamadi",
+        "err_no_video": "Bu linkte video bulunamadi",
         "err_private": "Video gizli",
         "err_signin": "Giris yaparak dogrulayin",
         "err_login": "Giris gerekli",
@@ -153,7 +143,7 @@ CEVIRILER = {
         "info_version": "Versiyon",
         "info_author": "Gelistirici",
         "info_license": "Lisans",
-        "info_desc": "Twitter/X'ten video indirme araci",
+        "info_desc": "Coklu platform video indirme araci",
         "shortcuts_title": "Klavye Kisayollari",
         "shortcuts_paste": "Ctrl+V / Sag Tik",
         "shortcuts_paste_desc": "Panodan yapistir",
@@ -173,8 +163,8 @@ CEVIRILER = {
         "lang_label": "Dil:",
     },
     "es": {
-        "app_title": "Twitter/X Video Descargador",
-        "url_label": "Enlace Tweet / X:",
+        "app_title": "Multi Downloader",
+        "url_label": "Enlace de video (YouTube, Instagram, TikTok, Twitter...):",
         "paste": "Pegar",
         "clear": "Limpiar",
         "browser_label": "Navegador:",
@@ -201,7 +191,7 @@ CEVIRILER = {
         "log_browser": "Navegador:",
         "log_link": "Enlace:",
         "msg_no_url": "Enlace requerido",
-        "msg_no_url_detail": "Pega un enlace de Tweet / X.",
+        "msg_no_url_detail": "Pega un enlace de video.",
         "msg_no_selection": "Sin seleccion",
         "msg_no_selection_detail": "Primero selecciona una resolucion.",
         "msg_paste_empty": "Portapapeles vacio",
@@ -215,7 +205,7 @@ CEVIRILER = {
         "no_browser": "Navegador no encontrado",
         "no_browser_detail": "Se necesita un navegador para descargar videos.\n\nReinicia el programa despues de instalar un navegador.",
         "err_unavailable": "Video no disponible (eliminado o privado)",
-        "err_no_video": "No se encontro video en este tweet",
+        "err_no_video": "No se encontro video en este enlace",
         "err_private": "Video privado",
         "err_signin": "Inicia sesion para confirmar",
         "err_login": "Inicio de sesion requerido",
@@ -237,7 +227,7 @@ CEVIRILER = {
         "info_version": "Version",
         "info_author": "Desarrollador",
         "info_license": "Licencia",
-        "info_desc": "Herramienta para descargar videos de Twitter/X",
+        "info_desc": "Herramienta para descargar videos de multiples plataformas",
         "shortcuts_title": "Atajos de Teclado",
         "shortcuts_paste": "Ctrl+V / Clic Derecho",
         "shortcuts_paste_desc": "Pegar del portapapeles",
@@ -257,8 +247,8 @@ CEVIRILER = {
         "lang_label": "Idioma:",
     },
     "pt": {
-        "app_title": "Twitter/X Video Downloader",
-        "url_label": "Link do Tweet / X:",
+        "app_title": "Multi Downloader",
+        "url_label": "Link do video (YouTube, Instagram, TikTok, Twitter...):",
         "paste": "Colar",
         "clear": "Limpar",
         "browser_label": "Navegador:",
@@ -285,7 +275,7 @@ CEVIRILER = {
         "log_browser": "Navegador:",
         "log_link": "Link:",
         "msg_no_url": "Link necessario",
-        "msg_no_url_detail": "Cole um link do Tweet / X.",
+        "msg_no_url_detail": "Cole um link de video.",
         "msg_no_selection": "Sem selecao",
         "msg_no_selection_detail": "Primeiro selecione uma resolucao.",
         "msg_paste_empty": "Area de transferencia vazia",
@@ -321,7 +311,7 @@ CEVIRILER = {
         "info_version": "Versao",
         "info_author": "Desenvolvedor",
         "info_license": "Licenca",
-        "info_desc": "Ferramenta para baixar videos do Twitter/X",
+        "info_desc": "Ferramenta para baixar videos de multiplas plataformas",
         "shortcuts_title": "Atalhos de Teclado",
         "shortcuts_paste": "Ctrl+V / Clique Direito",
         "shortcuts_paste_desc": "Colar da area de transferencia",
@@ -341,8 +331,8 @@ CEVIRILER = {
         "lang_label": "Idioma:",
     },
     "it": {
-        "app_title": "Twitter/X Video Downloader",
-        "url_label": "Link Tweet / X:",
+        "app_title": "Multi Downloader",
+        "url_label": "Link del video (YouTube, Instagram, TikTok, Twitter...):",
         "paste": "Incolla",
         "clear": "Pulisci",
         "browser_label": "Browser:",
@@ -369,7 +359,7 @@ CEVIRILER = {
         "log_browser": "Browser:",
         "log_link": "Link:",
         "msg_no_url": "Link richiesto",
-        "msg_no_url_detail": "Incolla un link Tweet / X.",
+        "msg_no_url_detail": "Incolla un link del video.",
         "msg_no_selection": "Nessuna selezione",
         "msg_no_selection_detail": "Prima seleziona una risoluzione.",
         "msg_pane_empty": "Appunti vuoti",
@@ -405,7 +395,7 @@ CEVIRILER = {
         "info_version": "Versione",
         "info_author": "Sviluppatore",
         "info_license": "Licenza",
-        "info_desc": "Strumento per scaricare video da Twitter/X",
+        "info_desc": "Strumento per scaricare video da piattaforme multiple",
         "shortcuts_title": "Scorciatoie da Tastiera",
         "shortcuts_paste": "Ctrl+V / Tasto Destro",
         "shortcuts_paste_desc": "Incolla dagli appunti",
@@ -425,8 +415,8 @@ CEVIRILER = {
         "lang_label": "Lingua:",
     },
     "ja": {
-        "app_title": "Twitter/X ダウンローダー",
-        "url_label": "Tweet / X リンク:",
+        "app_title": "Multi Downloader",
+        "url_label": "ビデオリンク (YouTube, Instagram, TikTok, Twitter...):",
         "paste": "貼り付け",
         "clear": "クリア",
         "browser_label": "ブラウザ:",
@@ -453,7 +443,7 @@ CEVIRILER = {
         "log_browser": "ブラウザ:",
         "log_link": "リンク:",
         "msg_no_url": "リンクが必要です",
-        "msg_no_url_detail": "Tweet / X のリンクを貼り付けてください。",
+        "msg_no_url_detail": "ビデオリンクを貼り付けてください。",
         "msg_no_selection": "未選択",
         "msg_no_selection_detail": "まず解像度を選択してください。",
         "msg_paste_empty": "クリップボードが空です",
@@ -509,8 +499,8 @@ CEVIRILER = {
         "lang_label": "言語:",
     },
     "ko": {
-        "app_title": "Twitter/X 비디오 다운로더",
-        "url_label": "Tweet / X 링크:",
+        "app_title": "Multi Downloader",
+        "url_label": "비디오 링크 (YouTube, Instagram, TikTok, Twitter...):",
         "paste": "붙여넣기",
         "clear": "지우기",
         "browser_label": "브라우저:",
@@ -537,7 +527,7 @@ CEVIRILER = {
         "log_browser": "브라우저:",
         "log_link": "링크:",
         "msg_no_url": "링크 필요",
-        "msg_no_url_detail": "Tweet / X 링크를 붙여넣으세요.",
+        "msg_no_url_detail": "비디오 링크를 붙여넣으세요.",
         "msg_no_selection": "선택 없음",
         "msg_no_selection_detail": "먼저 해상도를 선택하세요.",
         "msg_paste_empty": "클립보드가 비어있습니다",
@@ -593,8 +583,8 @@ CEVIRILER = {
         "lang_label": "언어:",
     },
     "zh": {
-        "app_title": "Twitter/X 视频下载器",
-        "url_label": "Tweet / X 链接:",
+        "app_title": "Multi Downloader",
+        "url_label": "视频链接 (YouTube, Instagram, TikTok, Twitter...):",
         "paste": "粘贴",
         "clear": "清除",
         "browser_label": "浏览器:",
@@ -621,7 +611,7 @@ CEVIRILER = {
         "log_browser": "浏览器:",
         "log_link": "链接:",
         "msg_no_url": "需要链接",
-        "msg_no_url_detail": "请粘贴 Tweet / X 链接。",
+        "msg_no_url_detail": "请粘贴视频链接。",
         "msg_no_selection": "未选择",
         "msg_no_selection_detail": "请先选择分辨率。",
         "msg_paste_empty": "剪贴板为空",
@@ -1018,20 +1008,9 @@ class TwitterIndirici(tk.Tk):
         app.mainloop()
 
     def _secilen_tarayici(self):
-        """Twitter'a giris yapilmis tarayiciyi otomatik bul"""
+        """Tum platformlar icin otomatik tarayici bul"""
         if not self.bulunan_tarayicilar:
             return None
-        
-        # Tum tarayicilari dene, hangisinde Twitter session varsa onu kullan
-        for tarayici in self.bulunan_tarayicilar:
-            try:
-                cookies_klasoru = self._cookies_klasoru_bul(tarayici)
-                if cookies_klasoru and self._twitter_session_var_mi(cookies_klasoru):
-                    return tarayici
-            except Exception:
-                continue
-        
-        # Hiçbirinde Twitter session yoksa ilk tarayiciyi dondur
         return self.bulunan_tarayicilar[0]
     
     def _cookies_klasoru_bul(self, tarayici):
