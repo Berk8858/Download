@@ -48,11 +48,13 @@ try:
     HAS_YTDLP = True
 except ImportError:
     HAS_YTDLP = False
+    # PyInstaller bundle'da yt-dlp modulu bulunamadi
+    # yt-dlp.exe subprocess ile kullanilacak
 
 # ============================================================
 # VERSIYON
 # ============================================================
-VERSION = "1.5"
+VERSION = "1.5.2"
 APP_NAME = "Multi Downloader"
 GITHUB_URL = "https://github.com/Berk8858/Download"
 
@@ -1172,9 +1174,13 @@ class TwitterIndirici(tk.Tk):
 
     def _kontrol_yukleme(self):
         eksik = []
-        if not HAS_YTDLP:
+        # yt-dlp kontrolu: once Python modulu, sonra exe
+        ytdlp_yolu = shutil.which("yt-dlp")
+        if BUNDLE_DIR and (BUNDLE_DIR / "yt-dlp.exe").exists():
+            ytdlp_yolu = ytdlp_yolu or str(BUNDLE_DIR / "yt-dlp.exe")
+        if not HAS_YTDLP and not ytdlp_yolu:
             eksik.append("yt-dlp (pip install yt-dlp)")
-        # ffmpeg kontrolu: once PATH, sonra bundle dizini
+        # ffmpeg kontrolu
         ffmpeg_yolu = shutil.which("ffmpeg") or (
             str(BUNDLE_DIR / "ffmpeg.exe") if BUNDLE_DIR and (BUNDLE_DIR / "ffmpeg.exe").exists() else None
         )
@@ -1266,21 +1272,41 @@ class TwitterIndirici(tk.Tk):
 
     def _getir_thread(self, url):
         try:
-            opts = {
-                "quiet": True,
-                "no_warnings": True,
-                "noplaylist": True,
-            }
-            
             tarayici = self._secilen_tarayici(url)
             if tarayici and tarayici != "YOK":
-                opts["cookiesfrombrowser"] = (tarayici,)
                 isim = TARAYICI_ISIMLERI.get(tarayici, {}).get(self.dil, tarayici)
                 self.msg_queue.put(("log", f"{self._t('log_browser')} {isim}"))
             
-            with YoutubeDL(opts) as ydl:
-                self._ytdl = ydl
-                info = ydl.extract_info(url, download=False)
+            # yt-dlp.exe yolunu bul
+            ytdlp_yolu = shutil.which("yt-dlp")
+            if BUNDLE_DIR and (BUNDLE_DIR / "yt-dlp.exe").exists():
+                ytdlp_yolu = ytdlp_yolu or str(BUNDLE_DIR / "yt-dlp.exe")
+            
+            if HAS_YTDLP:
+                # Python modulu ile
+                opts = {
+                    "quiet": True,
+                    "no_warnings": True,
+                    "noplaylist": True,
+                }
+                if tarayici and tarayici != "YOK":
+                    opts["cookiesfrombrowser"] = (tarayici,)
+                with YoutubeDL(opts) as ydl:
+                    self._ytdl = ydl
+                    info = ydl.extract_info(url, download=False)
+            elif ytdlp_yolu:
+                # yt-dlp.exe subprocess ile
+                cmd = [ytdlp_yolu, "--dump-json", "--no-playlist", "--quiet", url]
+                if tarayici and tarayici != "YOK":
+                    cmd = [ytdlp_yolu, "--dump-json", "--no-playlist", "--quiet",
+                           "--cookies-from-browser", tarayici, url]
+                sonuc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                if sonuc.returncode != 0:
+                    raise Exception(sonuc.stderr.strip() or "yt-dlp calistirilamadi")
+                import json
+                info = json.loads(sonuc.stdout)
+            else:
+                raise Exception("yt-dlp bulunamadi")
 
             baslik = info.get("title") or info.get("id") or ""
             self.msg_queue.put(("log", f"{self._t('log_title')} {str(baslik)[:80]}"))
@@ -1290,7 +1316,6 @@ class TwitterIndirici(tk.Tk):
             for f in formatlar:
                 h = f.get("height")
                 ext = f.get("ext", "")
-                # WebM ve MK formatlarini da dahil et
                 if h and f.get("vcodec") not in ("none", None):
                     if h not in gorulen or f.get("tbr", 0) > gorulen[h].get("tbr", 0):
                         gorulen[h] = f
@@ -1374,69 +1399,119 @@ class TwitterIndirici(tk.Tk):
         thread.start()
 
     def _indir_thread(self, url, klasor, format_sec, ses_mi):
-        def progress_hook(d):
-            if d.get("status") == "downloading":
-                total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
-                done = d.get("downloaded_bytes") or 0
-                if total:
-                    yuzde = int(done * 100 / total)
-                    hiz = d.get("_speed_str", "")
-                    self.msg_queue.put(("progress", yuzde))
-                    self.msg_queue.put(("durum", f"{self._t('status_downloading')} %{yuzde} ({hiz})"))
-            elif d.get("status") == "finished":
-                self.msg_queue.put(("progress", 100))
-                self.msg_queue.put(("durum", self._t("status_merging")))
-                self.msg_queue.put(("log", self._t("log_merging")))
-
-        opts = {
-            "outtmpl": os.path.join(klasor, "%(title)s [%(id)s].%(ext)s"),
-            "format": format_sec,
-            "progress_hooks": [progress_hook],
-            "noplaylist": True,
-            "quiet": True,
-            "no_warnings": True,
-            "noprogress": True,
-            "retries": 3,
-            "fragment_retries": 3,
-            # MP4 formatini tercih et
-            "merge_output_format": "mp4",
-        }
-        
-        # PyInstaller bundle'dan ffmpeg bul
-        if BUNDLE_DIR:
-            ffmpeg_yolu = str(BUNDLE_DIR / "ffmpeg.exe") if (BUNDLE_DIR / "ffmpeg.exe").exists() else None
-            if ffmpeg_yolu:
-                opts["ffmpeg_location"] = str(BUNDLE_DIR)
+        # yt-dlp.exe yolunu bul
+        ytdlp_yolu = shutil.which("yt-dlp")
+        if BUNDLE_DIR and (BUNDLE_DIR / "yt-dlp.exe").exists():
+            ytdlp_yolu = ytdlp_yolu or str(BUNDLE_DIR / "yt-dlp.exe")
         
         tarayici = self._secilen_tarayici(url)
-        if tarayici and tarayici != "YOK":
-            opts["cookiesfrombrowser"] = (tarayici,)
 
-        if ses_mi:
-            opts["postprocessors"] = [{
-                "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3",
-                "preferredquality": "192",
-            }]
-        else:
-            # Tum video indirmelerinde MP4'e donustur
-            opts["postprocessors"] = [{
-                "key": "FFmpegVideoConvertor",
-                "preferedformat": "mp4",
-            }]
+        if HAS_YTDLP:
+            # Python modulu ile
+            def progress_hook(d):
+                if d.get("status") == "downloading":
+                    total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
+                    done = d.get("downloaded_bytes") or 0
+                    if total:
+                        yuzde = int(done * 100 / total)
+                        hiz = d.get("_speed_str", "")
+                        self.msg_queue.put(("progress", yuzde))
+                        self.msg_queue.put(("durum", f"{self._t('status_downloading')} %{yuzde} ({hiz})"))
+                elif d.get("status") == "finished":
+                    self.msg_queue.put(("progress", 100))
+                    self.msg_queue.put(("durum", self._t("status_merging")))
+                    self.msg_queue.put(("log", self._t("log_merging")))
 
-        try:
-            with YoutubeDL(opts) as ydl:
-                self._ytdl = ydl
-                info = ydl.extract_info(url, download=True)
-                dosya = ydl.prepare_filename(info)
-                if ses_mi:
-                    dosya = os.path.splitext(dosya)[0] + ".mp3"
-                self.msg_queue.put(("bitti", dosya))
-        except Exception as e:
-            self.msg_queue.put(("hata", str(e)))
-        finally:
+            opts = {
+                "outtmpl": os.path.join(klasor, "%(title)s [%(id)s].%(ext)s"),
+                "format": format_sec,
+                "progress_hooks": [progress_hook],
+                "noplaylist": True,
+                "quiet": True,
+                "no_warnings": True,
+                "noprogress": True,
+                "retries": 3,
+                "fragment_retries": 3,
+                "merge_output_format": "mp4",
+            }
+            if BUNDLE_DIR:
+                ffmpeg_yolu = str(BUNDLE_DIR / "ffmpeg.exe") if (BUNDLE_DIR / "ffmpeg.exe").exists() else None
+                if ffmpeg_yolu:
+                    opts["ffmpeg_location"] = str(BUNDLE_DIR)
+            if tarayici and tarayici != "YOK":
+                opts["cookiesfrombrowser"] = (tarayici,)
+            if ses_mi:
+                opts["postprocessors"] = [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"}]
+            else:
+                opts["postprocessors"] = [{"key": "FFmpegVideoConvertor", "preferedformat": "mp4"}]
+            try:
+                with YoutubeDL(opts) as ydl:
+                    self._ytdl = ydl
+                    info = ydl.extract_info(url, download=True)
+                    dosya = ydl.prepare_filename(info)
+                    if ses_mi:
+                        dosya = os.path.splitext(dosya)[0] + ".mp3"
+                    self.msg_queue.put(("bitti", dosya))
+            except Exception as e:
+                self.msg_queue.put(("hata", str(e)))
+            finally:
+                self._ytdl = None
+
+        elif ytdlp_yolu:
+            # yt-dlp.exe subprocess ile
+            cmd = [
+                ytdlp_yolu,
+                "-f", format_sec,
+                "-o", os.path.join(klasor, "%(title)s [%(id)s].%(ext)s"),
+                "--merge-output-format", "mp4",
+                "--no-playlist",
+                "--retries", "3",
+                "--no-warnings",
+            ]
+            if tarayici and tarayici != "YOK":
+                cmd += ["--cookies-from-browser", tarayici]
+            if ses_mi:
+                cmd += ["-x", "--audio-format", "mp3", "--audio-quality", "192"]
+            cmd.append(url)
+            
+            self.msg_queue.put(("durum", self._t("status_downloading")))
+            
+            proc = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, bufsize=1
+            )
+            self._ytdl = proc
+            
+            for satir in proc.stdout:
+                satir = satir.strip()
+                if satir:
+                    # Progress yuzdesi
+                    if "%" in satir:
+                        try:
+                            import re
+                            m = re.search(r'(\d+\.?\d*)%', satir)
+                            if m:
+                                yuzde = int(float(m.group(1)))
+                                self.msg_queue.put(("progress", yuzde))
+                                self.msg_queue.put(("durum", f"{self._t('status_downloading')} %{yuzde}"))
+                        except Exception:
+                            pass
+                    self.msg_queue.put(("log", satir))
+            
+            proc.wait()
             self._ytdl = None
+            
+            if proc.returncode == 0:
+                # Bulunan dosyayi tara
+                import glob as glob_mod
+                sablon = os.path.join(klasor, "*.*")
+                dosyalar = sorted(glob_mod.glob(sablon), key=os.path.getmtime, reverse=True)
+                dosya = dosyalar[0] if dosyalar else "Indirildi"
+                self.msg_queue.put(("bitti", dosya))
+            else:
+                self.msg_queue.put(("hata", f"yt-dlp hatasi (kod: {proc.returncode})"))
+        else:
+            self.msg_queue.put(("hata", "yt-dlp bulunamadi"))
 
     def _iptal(self):
         self.durum_var.set(self._t("status_cancelled"))
