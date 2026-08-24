@@ -1,5 +1,19 @@
 # Degisiklik Kaydi
 
+## v1.5.3 (2026-08-25)
+
+### Yeni Ozellikler
+- **Otomatik guncelleme** — Yeni versiyonu GitHub'dan ceker, yedekler, gunceller, yeniden baslatir
+- **Cookie hatasi cozumu** — Chrome acikken cookie hatasi alinirsa cookiesiz devam eder
+- **Windows tarayici algilama** — Chrome, Edge, Firefox, Brave, Opera, Vivaldi
+
+### Duzeltmeler
+- Guncelleme: EXE indirme → dogrudan .py kodu guncelleme
+- Cookie hatasi: coinsiz fallback eklendi
+- README v1.5.3 guncellendi
+
+---
+
 ## v1.5.1 (2026-08-24)
 
 ### Windows

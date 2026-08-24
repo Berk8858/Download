@@ -1334,9 +1334,19 @@ class TwitterIndirici(tk.Tk):
                 }
                 if tarayici and tarayici != "YOK":
                     opts["cookiesfrombrowser"] = (tarayici,)
-                with YoutubeDL(opts) as ydl:
-                    self._ytdl = ydl
-                    info = ydl.extract_info(url, download=False)
+                try:
+                    with YoutubeDL(opts) as ydl:
+                        self._ytdl = ydl
+                        info = ydl.extract_info(url, download=False)
+                except Exception as cookie_err:
+                    if "cookie" in str(cookie_err).lower():
+                        opts.pop("cookiesfrombrowser", None)
+                        self.msg_queue.put(("log", f"Cookie hatasi, cookiesiz devam: {cookie_err}"))
+                        with YoutubeDL(opts) as ydl:
+                            self._ytdl = ydl
+                            info = ydl.extract_info(url, download=False)
+                    else:
+                        raise
             elif ytdlp_yolu:
                 # yt-dlp.exe subprocess ile
                 cmd = [ytdlp_yolu, "--dump-json", "--no-playlist", "--quiet", url]
@@ -1345,7 +1355,13 @@ class TwitterIndirici(tk.Tk):
                            "--cookies-from-browser", tarayici, url]
                 sonuc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
                 if sonuc.returncode != 0:
-                    raise Exception(sonuc.stderr.strip() or "yt-dlp calistirilamadi")
+                    hata = sonuc.stderr.strip()
+                    if "cookie" in hata.lower():
+                        self.msg_queue.put(("log", f"Cookie hatasi, cookiesiz devam: {hata[:100]}"))
+                        cmd = [ytdlp_yolu, "--dump-json", "--no-playlist", "--quiet", url]
+                        sonuc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                    if sonuc.returncode != 0:
+                        raise Exception(sonuc.stderr.strip() or "yt-dlp calistirilamadi")
                 import json
                 info = json.loads(sonuc.stdout)
             else:
@@ -1496,7 +1512,21 @@ class TwitterIndirici(tk.Tk):
                         dosya = os.path.splitext(dosya)[0] + ".mp3"
                     self.msg_queue.put(("bitti", dosya))
             except Exception as e:
-                self.msg_queue.put(("hata", str(e)))
+                if "cookie" in str(e).lower():
+                    opts.pop("cookiesfrombrowser", None)
+                    self.msg_queue.put(("log", f"Cookie hatasi, cookiesiz devam"))
+                    try:
+                        with YoutubeDL(opts) as ydl:
+                            self._ytdl = ydl
+                            info = ydl.extract_info(url, download=True)
+                            dosya = ydl.prepare_filename(info)
+                            if ses_mi:
+                                dosya = os.path.splitext(dosya)[0] + ".mp3"
+                            self.msg_queue.put(("bitti", dosya))
+                    except Exception as e2:
+                        self.msg_queue.put(("hata", str(e2)))
+                else:
+                    self.msg_queue.put(("hata", str(e)))
             finally:
                 self._ytdl = None
 
@@ -1659,47 +1689,56 @@ class TwitterIndirici(tk.Tk):
 
     def _guncelleme_indir(self, versiyon):
         import urllib.request
-        import tempfile
-        import zipfile
-        import shutil
+        import subprocess
         import sys
 
         self._log_yaz(f"v{versiyon} indiriliyor...")
 
         try:
-            exe_klasor = os.path.dirname(os.path.abspath(sys.argv[0]))
-            exe_dosya = os.path.abspath(sys.argv[0])
-            exe_adi = os.path.basename(exe_dosya)
+            self.durum_var.set(f"v{versiyon} guncelleniyor...")
+            self._log_yaz(f"GitHub'dan yeni kod indiriliyor...")
 
-            if sys.platform == "win32":
-                if not exe_dosya.lower().endswith(".exe"):
-                    messagebox.showinfo(self._t("update_title"),
-                        f"Yeni versiyon: v{versiyon}\n\nIndirme: {GITHUB_URL}")
-                    return
+            raw_url = "https://raw.githubusercontent.com/Berk8858/Download/main/twitter-indirici.py"
+            try:
+                data = urllib.request.urlopen(raw_url, timeout=30).read()
+            except Exception:
+                self._log_yaz("Dogrudan indirme basarisiz, HTTPS ile deneniyor...")
+                raw_url = "https://github.com/Berk8858/Download/raw/main/twitter-indirici.py"
+                data = urllib.request.urlopen(raw_url, timeout=30).read()
 
-                url = f"https://github.com/Berk8858/Download/releases/download/v{versiyon}/Multi-Downloader.exe"
-                gecici = os.path.join(tempfile.gettempdir(), f"Multi-Downloader-v{versiyon}.exe")
+            if len(data) < 1000:
+                raise Exception("Indirilen dosya cok kucuk, guncelleme basarisiz")
 
-                self.durum_var.set(f"v{versiyon} indiriliyor...")
-                urllib.request.urlretrieve(url, gecici)
+            mevcut_dosya = os.path.abspath(sys.argv[0])
+            mevcut_klasor = os.path.dirname(mevcut_dosya)
+            yedek_dosya = mevcut_dosya + ".yedek"
 
-                yeni_boyut = os.path.getsize(gecici)
-                if yeni_boyut < 1_000_000:
-                    os.remove(gecici)
-                    messagebox.showerror(self._t("update_title"), "Indirme basarisiz - dosya cok kucuk")
-                    return
+            self._log_yaz(f"Mevcut dosya yedekleniyor: {yedek_dosya}")
+            import shutil
+            shutil.copy2(mevcut_dosya, yedek_dosya)
 
-                yeni_yol = os.path.join(exe_klasor, f"Multi-Downloader-v{versiyon}.exe")
-                shutil.move(gecici, yeni_yol)
+            with open(mevcut_dosya, "wb") as f:
+                f.write(data)
 
-                cevap = messagebox.askyesno(self._t("update_title"),
-                    f"v{versiyon} indirildi!\n\n{yeni_yol}\n\nSimdi acilsin mi?")
-                if cevap:
-                    os.startfile(yeni_yol)
-                    self.master.after(500, self.master.destroy)
+            self._log_yaz(f"Guncelleme tamamlandi! Yeniden baslatiliyor...")
+
+            cevap = messagebox.askyesno(self._t("update_title"),
+                f"v{versiyon} guncellendi!\n\nProgram yeniden baslatilacak.\nDevam edilsin mi?")
+
+            if cevap:
+                python_yolu = sys.executable
+                if sys.platform == "win32":
+                    if "pythonw" in python_yolu.lower():
+                        python_yolu = python_yolu.replace("pythonw", "python")
+                    subprocess.Popen([python_yolu, mevcut_dosya] + sys.argv[1:],
+                        cwd=mevcut_klasor)
+                else:
+                    subprocess.Popen([python_yolu, mevcut_dosya] + sys.argv[1:],
+                        cwd=mevcut_klasor)
+                self.master.after(500, self.master.destroy)
             else:
                 messagebox.showinfo(self._t("update_title"),
-                    f"Yeni versiyon: v{versiyon}\n\nIndirme: {GITHUB_URL}")
+                    f"Guncelleme tamamlandi.\nSonraki baslatmada gecerli olacak.")
 
         except Exception as e:
             messagebox.showerror(self._t("update_title"), f"Guncelleme hatasi:\n{e}")
