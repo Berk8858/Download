@@ -835,23 +835,66 @@ def os_dil_algila():
 
 def tarayici_bul():
     bulunanlar = []
-    linux_tarayicilar = {
-        "firefox": ["firefox", "firefox-esr"],
-        "chrome": ["google-chrome", "google-chrome-stable"],
-        "brave": ["brave-browser", "brave"],
-        "chromium": ["chromium", "chromium-browser"],
-        "edge": ["microsoft-edge", "microsoft-edge-stable"],
-        "opera": ["opera", "opera-stable"],
-        "vivaldi": ["vivaldi", "vivaldi-stable"],
-    }
-    for tarayici_adi, komutlar in linux_tarayicilar.items():
-        for komut in komutlar:
-            if shutil.which(komut):
-                bulunanlar.append(tarayici_adi)
-                break
+    
+    if sys.platform == "win32":
+        # Windows tarayici yollari
+        windows_tarayicilar = {
+            "chrome": [
+                os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
+                r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+            ],
+            "edge": [
+                os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe"),
+                r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+                r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+            ],
+            "firefox": [
+                os.path.expandvars(r"%LOCALAPPDATA%\Mozilla Firefox\firefox.exe"),
+                r"C:\Program Files\Mozilla Firefox\firefox.exe",
+                r"C:\Program Files (x86)\Mozilla Firefox\firefox.exe",
+            ],
+            "brave": [
+                os.path.expandvars(r"%LOCALAPPDATA%\BraveSoftware\Brave-Browser\Application\brave.exe"),
+                r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe",
+            ],
+            "opera": [
+                os.path.expandvars(r"%LOCALAPPDATA%\Opera Software\Opera Stable\opera.exe"),
+                r"C:\Program Files\Opera\opera.exe",
+            ],
+            "vivaldi": [
+                os.path.expandvars(r"%LOCALAPPDATA%\Vivaldi\Application\vivaldi.exe"),
+                r"C:\Program Files\Vivaldi\Application\vivaldi.exe",
+            ],
+        }
+        for tarayici_adi, yollar in windows_tarayicilar.items():
+            for yol in yollar:
+                if os.path.isfile(yol):
+                    bulunanlar.append(tarayici_adi)
+                    break
+    else:
+        # Linux tarayici komutlari
+        linux_tarayicilar = {
+            "firefox": ["firefox", "firefox-esr"],
+            "chrome": ["google-chrome", "google-chrome-stable"],
+            "brave": ["brave-browser", "brave"],
+            "chromium": ["chromium", "chromium-browser"],
+            "edge": ["microsoft-edge", "microsoft-edge-stable"],
+            "opera": ["opera", "opera-stable"],
+            "vivaldi": ["vivaldi", "vivaldi-stable"],
+        }
+        for tarayici_adi, komutlar in linux_tarayicilar.items():
+            for komut in komutlar:
+                if shutil.which(komut):
+                    bulunanlar.append(tarayici_adi)
+                    break
+    
     return bulunanlar
 
 def _varsayilan_indirme_klasoru():
+    if sys.platform == "win32":
+        # Windows: Kullanici/Downloads
+        return str(Path.home() / "Downloads")
     try:
         sonuc = subprocess.run(["xdg-user-dir", "DOWNLOAD"], capture_output=True,
                                text=True, timeout=5)
