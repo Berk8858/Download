@@ -32,6 +32,13 @@ import queue
 import threading
 from pathlib import Path
 
+# PyInstaller frozen bundle kontrolu
+if getattr(sys, 'frozen', False):
+    BUNDLE_DIR = Path(sys._MEIPASS)
+    os.environ["PATH"] = str(BUNDLE_DIR) + os.pathsep + os.environ.get("PATH", "")
+else:
+    BUNDLE_DIR = None
+
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from tkinter.scrolledtext import ScrolledText
@@ -1167,7 +1174,11 @@ class TwitterIndirici(tk.Tk):
         eksik = []
         if not HAS_YTDLP:
             eksik.append("yt-dlp (pip install yt-dlp)")
-        if not shutil.which("ffmpeg"):
+        # ffmpeg kontrolu: once PATH, sonra bundle dizini
+        ffmpeg_yolu = shutil.which("ffmpeg") or (
+            str(BUNDLE_DIR / "ffmpeg.exe") if BUNDLE_DIR and (BUNDLE_DIR / "ffmpeg.exe").exists() else None
+        )
+        if not ffmpeg_yolu:
             eksik.append("ffmpeg (sudo dnf/apt install ffmpeg)")
         if eksik:
             messagebox.showerror(
@@ -1390,6 +1401,12 @@ class TwitterIndirici(tk.Tk):
             # MP4 formatini tercih et
             "merge_output_format": "mp4",
         }
+        
+        # PyInstaller bundle'dan ffmpeg bul
+        if BUNDLE_DIR:
+            ffmpeg_yolu = str(BUNDLE_DIR / "ffmpeg.exe") if (BUNDLE_DIR / "ffmpeg.exe").exists() else None
+            if ffmpeg_yolu:
+                opts["ffmpeg_location"] = str(BUNDLE_DIR)
         
         tarayici = self._secilen_tarayici(url)
         if tarayici and tarayici != "YOK":
