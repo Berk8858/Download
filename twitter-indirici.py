@@ -1687,54 +1687,72 @@ class TwitterIndirici(tk.Tk):
         import urllib.request
         import subprocess
         import sys
+        import shutil
+        import tempfile
 
         self._log_yaz(f"v{versiyon} indiriliyor...")
 
         try:
             self.durum_var.set(f"v{versiyon} guncelleniyor...")
-            self._log_yaz(f"GitHub'dan yeni kod indiriliyor...")
-
-            raw_url = "https://raw.githubusercontent.com/Berk8858/Download/main/twitter-indirici.py"
-            try:
-                data = urllib.request.urlopen(raw_url, timeout=30).read()
-            except Exception:
-                self._log_yaz("Dogrudan indirme basarisiz, HTTPS ile deneniyor...")
-                raw_url = "https://github.com/Berk8858/Download/raw/main/twitter-indirici.py"
-                data = urllib.request.urlopen(raw_url, timeout=30).read()
-
-            if len(data) < 1000:
-                raise Exception("Indirilen dosya cok kucuk, guncelleme basarisiz")
 
             mevcut_dosya = os.path.abspath(sys.argv[0])
             mevcut_klasor = os.path.dirname(mevcut_dosya)
-            yedek_dosya = mevcut_dosya + ".yedek"
+            frozen = getattr(sys, 'frozen', False)
 
-            self._log_yaz(f"Mevcut dosya yedekleniyor: {yedek_dosya}")
-            import shutil
-            shutil.copy2(mevcut_dosya, yedek_dosya)
+            if frozen:
+                self._log_yaz("EXE modu - yeni EXE indiriliyor...")
+                exe_url = f"https://github.com/Berk8858/Download/releases/download/v{versiyon}/Multi-Downloader.exe"
+                yeni_dosya = os.path.join(tempfile.gettempdir(), f"Multi-Downloader-v{versiyon}.exe")
 
-            with open(mevcut_dosya, "wb") as f:
-                f.write(data)
+                self._log_yaz(f"Indiriliyor: {yeni_dosya}")
+                urllib.request.urlretrieve(exe_url, yeni_dosya)
 
-            self._log_yaz(f"Guncelleme tamamlandi! Yeniden baslatiliyor...")
+                yeni_boyut = os.path.getsize(yeni_dosya)
+                if yeni_boyut < 1_000_000:
+                    os.remove(yeni_dosya)
+                    raise Exception("Indirilen dosya cok kucuk")
 
-            cevap = messagebox.askyesno(self._t("update_title"),
-                f"v{versiyon} guncellendi!\n\nProgram yeniden baslatilacak.\nDevam edilsin mi?")
+                self._log_yaz(f"Indirme tamamlandi ({yeni_boyut // 1024 // 1024}MB)")
 
-            if cevap:
-                python_yolu = sys.executable
-                if sys.platform == "win32":
+                cevap = messagebox.askyesno(self._t("update_title"),
+                    f"v{versiyon} indirildi!\n\nSimdi acilsin mi?")
+                if cevap:
+                    if sys.platform == "win32":
+                        os.startfile(yeni_dosya)
+                    else:
+                        subprocess.Popen([yeni_dosya])
+                    self.master.after(500, self.master.destroy)
+            else:
+                self._log_yaz("Python modu - .py kodu guncelleniyor...")
+
+                raw_url = "https://raw.githubusercontent.com/Berk8858/Download/main/twitter-indirici.py"
+                try:
+                    data = urllib.request.urlopen(raw_url, timeout=30).read()
+                except Exception:
+                    raw_url = "https://github.com/Berk8858/Download/raw/main/twitter-indirici.py"
+                    data = urllib.request.urlopen(raw_url, timeout=30).read()
+
+                if len(data) < 1000:
+                    raise Exception("Indirilen dosya cok kucuk")
+
+                yedek_dosya = mevcut_dosya + ".yedek"
+                self._log_yaz(f"Yedekleniyor: {yedek_dosya}")
+                shutil.copy2(mevcut_dosya, yedek_dosya)
+
+                with open(mevcut_dosya, "wb") as f:
+                    f.write(data)
+
+                self._log_yaz("Guncelleme tamamlandi!")
+
+                cevap = messagebox.askyesno(self._t("update_title"),
+                    f"v{versiyon} guncellendi!\n\nProgram yeniden baslatilacak.\nDevam edilsin mi?")
+                if cevap:
+                    python_yolu = sys.executable
                     if "pythonw" in python_yolu.lower():
                         python_yolu = python_yolu.replace("pythonw", "python")
                     subprocess.Popen([python_yolu, mevcut_dosya] + sys.argv[1:],
                         cwd=mevcut_klasor)
-                else:
-                    subprocess.Popen([python_yolu, mevcut_dosya] + sys.argv[1:],
-                        cwd=mevcut_klasor)
-                self.master.after(500, self.master.destroy)
-            else:
-                messagebox.showinfo(self._t("update_title"),
-                    f"Guncelleme tamamlandi.\nSonraki baslatmada gecerli olacak.")
+                    self.master.after(500, self.master.destroy)
 
         except Exception as e:
             messagebox.showerror(self._t("update_title"), f"Guncelleme hatasi:\n{e}")
