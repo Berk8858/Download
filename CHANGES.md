@@ -1,5 +1,20 @@
 # Degisiklik Kaydi
 
+## v1.5.1 (2026-08-24)
+
+### Windows
+- **Multi-Downloader.exe** — Kurulumsuz Windows versiyonu (84MB)
+- yt-dlp ve ffmpeg dahil
+- Tek dosya, Python gerekmez
+
+### Duzeltmeler
+- Help menusu messagebox ile degistirildi
+- Guncelleme kontrolu: git ls-remote kullanildi
+- Dil menu: Ulke isimleri duzeltildi
+- Guvenlik analizi tamamlandi
+
+---
+
 ## v1.5 (2026-08-24)
 
 ### Yeni Ozellikler
