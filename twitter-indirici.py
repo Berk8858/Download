@@ -898,28 +898,39 @@ class TwitterIndirici(tk.Tk):
 
     def _arayuz_kur(self):
         # Menu cubugu
-        menu_cubugu = tk.Menu(self)
-        self.config(menu=menu_cubugu)
+        self.menu_cubugu = tk.Menu(self)
+        self.config(menu=self.menu_cubugu)
         
         # Yardim menusu
-        yardim_menu = tk.Menu(menu_cubugu, tearoff=0)
-        menu_cubugu.add_cascade(label=self._t("menu_help"), menu=yardim_menu)
-        yardim_menu.add_command(label=self._t("menu_info"), command=self._info_goster)
-        yardim_menu.add_command(label=self._t("menu_shortcuts"), command=self._kisayollar_goster)
+        self.yardim_menu = tk.Menu(self.menu_cubugu, tearoff=0)
+        self.menu_cubugu.add_cascade(label=self._t("menu_help"), menu=self.yardim_menu)
+        self.yardim_menu.add_command(label=self._t("menu_info"), command=self._info_goster)
+        self.yardim_menu.add_command(label=self._t("menu_shortcuts"), command=self._kisayollar_goster)
         
         # Dil alt menusu
-        dil_menu = tk.Menu(yardim_menu, tearoff=0)
-        yardim_menu.add_cascade(label=self._t("lang_label"), menu=dil_menu)
+        self.dil_menu = tk.Menu(self.yardim_menu, tearoff=0)
+        self.yardim_menu.add_cascade(label=self._t("lang_label"), menu=self.dil_menu)
+        
+        DIL_ISIMLERI = {
+            "tr": "Turkce",
+            "es": "Espanol",
+            "pt": "Portugues",
+            "it": "Italiano",
+            "ja": "Nihongo",
+            "ko": "Korean",
+            "zh": "Chinese",
+        }
+        
         for kod, bayrak in BAYRAKLAR.items():
-            dil_adi = CEVIRILER[kod]["app_title"].split(" ")[-1] if kod != "tr" else "Turkce"
-            dil_menu.add_command(
+            dil_adi = DIL_ISIMLERI.get(kod, kod)
+            self.dil_menu.add_command(
                 label=f"  [{bayrak}]  {dil_adi}",
                 command=lambda k=kod: self._dil_ayarla(k)
             )
         
-        yardim_menu.add_separator()
-        yardim_menu.add_command(label=self._t("menu_update"), command=self._guncelleme_kontrol)
-        yardim_menu.add_command(label=self._t("menu_github"), command=self._github_ac)
+        self.yardim_menu.add_separator()
+        self.yardim_menu.add_command(label=self._t("menu_update"), command=self._guncelleme_kontrol)
+        self.yardim_menu.add_command(label=self._t("menu_github"), command=self._github_ac)
 
         pad = {"padx": 12, "pady": 4}
 
@@ -1007,11 +1018,96 @@ class TwitterIndirici(tk.Tk):
         
         app.mainloop()
 
-    def _secilen_tarayici(self):
-        """Tum platformlar icin otomatik tarayici bul"""
+    def _secilen_tarayici(self, url=""):
+        """URL'deki platform icin session olan tarayiciyi bul"""
         if not self.bulunan_tarayicilar:
             return None
+        
+        # Platformu URL'den algila
+        platform = self._platform_algila(url)
+        
+        # Tum tarayicilari dene, hangisinde session varsa onu kullan
+        for tarayici in self.bulunan_tarayicilar:
+            try:
+                cookies_klasoru = self._cookies_klasoru_bul(tarayici)
+                if cookies_klasoru and self._session_var_mi(cookies_klasoru, platform):
+                    return tarayici
+            except Exception:
+                continue
+        
+        # Hiçbirinde session yoksa ilk tarayiciyi dondur
         return self.bulunan_tarayicilar[0]
+    
+    def _platform_algila(self, url):
+        """URL'den platformu algila"""
+        url_lower = url.lower()
+        if "twitter.com" in url_lower or "x.com" in url_lower:
+            return "twitter"
+        elif "instagram.com" in url_lower:
+            return "instagram"
+        elif "youtube.com" in url_lower or "youtu.be" in url_lower:
+            return "youtube"
+        elif "tiktok.com" in url_lower:
+            return "tiktok"
+        elif "facebook.com" in url_lower or "fb.com" in url_lower:
+            return "facebook"
+        elif "reddit.com" in url_lower:
+            return "reddit"
+        elif "twitch.tv" in url_lower:
+            return "twitch"
+        return "genel"
+    
+    def _session_var_mi(self, cookies_klasoru, platform):
+        """Tarayicida platform session cookie'si var mi kontrol et"""
+        import sqlite3
+        import glob
+        
+        # Platform bazli domain arama
+        domain_map = {
+            "twitter": ["twitter.com", "x.com"],
+            "instagram": ["instagram.com"],
+            "youtube": ["youtube.com", "google.com"],
+            "tiktok": ["tiktok.com"],
+            "facebook": ["facebook.com", "fb.com"],
+            "reddit": ["reddit.com"],
+            "twitch": ["twitch.tv"],
+            "genel": ["twitter.com", "x.com", "instagram.com", "youtube.com"],
+        }
+        
+        domains = domain_map.get(platform, domain_map["genel"])
+        
+        # Chrome/Brave/Edge tarayicilari icin
+        cookie_dosyalari = glob.glob(str(cookies_klasoru / "**/Cookies"), recursive=True)
+        for cookie_dosyasi in cookie_dosyalari[:3]:
+            try:
+                conn = sqlite3.connect(cookie_dosyasi)
+                cursor = conn.cursor()
+                for domain in domains:
+                    cursor.execute("SELECT name FROM cookies WHERE host_key LIKE ? LIMIT 1", (f"%{domain}%",))
+                    if cursor.fetchone():
+                        conn.close()
+                        return True
+                conn.close()
+            except Exception:
+                continue
+        
+        # Firefox icin
+        if "firefox" in str(cookies_klasoru):
+            sqlite_dosyalari = glob.glob(str(cookies_klasoru / "*/cookies.sqlite"))
+            for sqlite_dosyasi in sqlite_dosyalari[:3]:
+                try:
+                    conn = sqlite3.connect(sqlite_dosyasi)
+                    cursor = conn.cursor()
+                    for domain in domains:
+                        cursor.execute("SELECT name FROM moz_cookies WHERE baseDomain LIKE ? LIMIT 1", (f"%{domain}%",))
+                        if cursor.fetchone():
+                            conn.close()
+                            return True
+                    conn.close()
+                except Exception:
+                    continue
+        
+        return False
     
     def _cookies_klasoru_bul(self, tarayici):
         """Tarayici cookies klasorunu bul"""
@@ -1165,7 +1261,7 @@ class TwitterIndirici(tk.Tk):
                 "noplaylist": True,
             }
             
-            tarayici = self._secilen_tarayici()
+            tarayici = self._secilen_tarayici(url)
             if tarayici and tarayici != "YOK":
                 opts["cookiesfrombrowser"] = (tarayici,)
                 isim = TARAYICI_ISIMLERI.get(tarayici, {}).get(self.dil, tarayici)
@@ -1182,6 +1278,8 @@ class TwitterIndirici(tk.Tk):
             formatlar = info.get("formats") or []
             for f in formatlar:
                 h = f.get("height")
+                ext = f.get("ext", "")
+                # WebM ve MK formatlarini da dahil et
                 if h and f.get("vcodec") not in ("none", None):
                     if h not in gorulen or f.get("tbr", 0) > gorulen[h].get("tbr", 0):
                         gorulen[h] = f
@@ -1289,9 +1387,11 @@ class TwitterIndirici(tk.Tk):
             "noprogress": True,
             "retries": 3,
             "fragment_retries": 3,
+            # MP4 formatini tercih et
+            "merge_output_format": "mp4",
         }
         
-        tarayici = self._secilen_tarayici()
+        tarayici = self._secilen_tarayici(url)
         if tarayici and tarayici != "YOK":
             opts["cookiesfrombrowser"] = (tarayici,)
 
@@ -1300,6 +1400,12 @@ class TwitterIndirici(tk.Tk):
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": "mp3",
                 "preferredquality": "192",
+            }]
+        else:
+            # Tum video indirmelerinde MP4'e donustur
+            opts["postprocessors"] = [{
+                "key": "FFmpegVideoConvertor",
+                "preferedformat": "mp4",
             }]
 
         try:
@@ -1357,115 +1463,63 @@ class TwitterIndirici(tk.Tk):
     # HELP MENU Fonksiyonlari
     # ============================================================
     def _info_goster(self):
-        info_pencere = ttk.Toplevel(self)
-        info_pencere.title(self._t("info_title"))
-        info_pencere.geometry("420x280")
-        info_pencere.resizable(False, False)
-        info_pencere.transient(self)
-        info_pencere.grab_set()
-        
-        cerceve = ttk.Frame(info_pencere, padding=20)
-        cerceve.pack(fill="both", expand=True)
-        
-        ttk.Label(cerceve, text=f"{self._t('app_title')}", font=("Sans", 16, "bold")).pack(pady=(0, 5))
-        ttk.Label(cerceve, text=f"v{VERSION}", font=("Sans", 12)).pack(pady=(0, 10))
-        ttk.Label(cerceve, text=self._t("info_desc"), font=("Sans", 11)).pack(pady=(0, 20))
-        
-        bilgi_cerceve = ttk.Frame(cerceve)
-        bilgi_cerceve.pack(fill="x")
-        
-        bilgiler = [
-            (self._t("info_version"), VERSION),
-            (self._t("info_author"), "Berk8858"),
-            (self._t("info_license"), "MIT"),
-        ]
-        
-        for etiket, deger in bilgiler:
-            satir = ttk.Frame(bilgi_cerceve)
-            satir.pack(fill="x", pady=2)
-            ttk.Label(satir, text=f"{etiket}:", font=("Sans", 10, "bold")).pack(side="left")
-            ttk.Label(satir, text=deger, font=("Sans", 10)).pack(side="left", padx=6)
-        
-        ttk.Button(cerceve, text="OK", 
-                   command=info_pencere.destroy).pack(pady=(15, 0))
+        mesaj = (
+            f"{self._t('app_title')}\n"
+            f"Versiyon: {VERSION}\n"
+            f"{self._t('info_desc')}\n\n"
+            f"Gelistirici: Berk8858\n"
+            f"Lisans: MIT\n"
+            f"GitHub: {GITHUB_URL}"
+        )
+        messagebox.showinfo(self._t("info_title"), mesaj)
 
     def _kisayollar_goster(self):
-        kisayol_pencere = ttk.Toplevel(self)
-        kisayol_pencere.title(self._t("shortcuts_title"))
-        kisayol_pencere.geometry("380x300")
-        kisayol_pencere.resizable(False, False)
-        kisayol_pencere.transient(self)
-        kisayol_pencere.grab_set()
-        
-        cerceve = ttk.Frame(kisayol_pencere, padding=20)
-        cerceve.pack(fill="both", expand=True)
-        
-        ttk.Label(cerceve, text=self._t("shortcuts_title"), font=("Sans", 14, "bold")).pack(pady=(0, 15))
-        
-        kisayollar = [
-            (self._t("shortcuts_paste"), self._t("shortcuts_paste_desc")),
-            (self._t("shortcuts_enter"), self._t("shortcuts_enter_desc")),
-            (self._t("shortcuts_escape"), self._t("shortcuts_escape_desc")),
-            (self._t("shortcuts_sag_tik"), self._t("shortcuts_sag_tik_desc")),
-        ]
-        
-        for kisayol, aciklama in kisayollar:
-            satir = ttk.Frame(cerceve)
-            satir.pack(fill="x", pady=4)
-            ttk.Label(satir, text=kisayol, font=("Sans", 10, "bold"), 
-                      width=18, anchor="w").pack(side="left")
-            ttk.Label(satir, text=aciklama, font=("Sans", 10)).pack(side="left")
-        
-        ttk.Button(cerceve, text="OK",
-                   command=kisayol_pencere.destroy).pack(pady=(15, 0))
+        mesaj = (
+            "Klavye Kisayollari:\n\n"
+            "Ctrl+V / Sag Tik  →  Panodan yapistir\n"
+            "Enter  →  Cozunurlukleri getir\n"
+            "Escape  →  Iptal et\n"
+            "Cift Tik  →  Indirmeyi baslat"
+        )
+        messagebox.showinfo(self._t("shortcuts_title"), mesaj)
 
     def _guncelleme_kontrol(self):
-        guncelleme_pencere = ttk.Toplevel(self)
-        guncelleme_pencere.title(self._t("update_title"))
-        guncelleme_pencere.geometry("380x220")
-        guncelleme_pencere.resizable(False, False)
-        guncelleme_pencere.transient(self)
-        guncelleme_pencere.grab_set()
-        
-        cerceve = ttk.Frame(guncelleme_pencere, padding=20)
-        cerceve.pack(fill="both", expand=True)
-        
-        ttk.Label(cerceve, text=self._t("update_title"), font=("Sans", 14, "bold")).pack(pady=(0, 15))
-        
-        mevcut_satir = ttk.Frame(cerceve)
-        mevcut_satir.pack(fill="x", pady=4)
-        ttk.Label(mevcut_satir, text=self._t("update_current"), font=("Sans", 10)).pack(side="left")
-        ttk.Label(mevcut_satir, text=VERSION, font=("Sans", 10, "bold")).pack(side="left", padx=6)
-        
-        durum_label = ttk.Label(cerceve, text=self._t("update_checking"), 
-                                 font=("Sans", 10), foreground="gray")
-        durum_label.pack(pady=10)
-        
-        def kontrol_et():
-            try:
-                import urllib.request
-                import json
-                url = "https://api.github.com/repos/Berk8858/Download/releases/latest"
-                yanit = urllib.request.urlopen(url, timeout=5)
-                veri = json.loads(yanit.read())
-                son_versiyon = veri.get("tag_name", "").replace("v", "")
-                
-                son_satir = ttk.Frame(cerceve)
-                son_satir.pack(fill="x", pady=4)
-                ttk.Label(son_satir, text=self._t("update_latest"), font=("Sans", 10)).pack(side="left")
-                ttk.Label(son_satir, text=son_versiyon, font=("Sans", 10, "bold")).pack(side="left", padx=6)
-                
-                if son_versiyon and son_versiyon != VERSION:
-                    durum_label.config(text=self._t("update_new"), foreground="orange")
-                else:
-                    durum_label.config(text=self._t("update_ok"), foreground="green")
-            except Exception:
-                durum_label.config(text=self._t("update_error"), foreground="red")
-        
-        threading.Thread(target=kontrol_et, daemon=True).start()
-        
-        ttk.Button(cerceve, text="OK",
-                   command=guncelleme_pencere.destroy).pack(pady=(15, 0))
+        try:
+            import subprocess
+            sonuc = subprocess.run(
+                ["git", "ls-remote", "--tags", "git@github.com:Berk8858/Download.git"],
+                capture_output=True, text=True, timeout=10
+            )
+            if sonuc.returncode != 0:
+                raise Exception("git ls-remote failed")
+            
+            # Son tag'i bul
+            tagler = []
+            for satir in sonuc.stdout.strip().split("\n"):
+                if satir and "refs/tags/v" in satir:
+                    parts = satir.split("refs/tags/v")
+                    if len(parts) > 1:
+                        tag = parts[1].split("^{}")[0].strip()
+                        if tag:
+                            tagler.append(tag)
+            
+            if not tagler:
+                raise Exception("No tags found")
+            
+            # En son versiyonu bul
+            def versiyon_parse(v):
+                return tuple(int(x) for x in v.split("."))
+            
+            son_versiyon = max(tagler, key=versiyon_parse)
+            
+            if son_versiyon and son_versiyon != VERSION:
+                mesaj = f"Yeni versiyon mevcut: v{son_versiyon}\n\nMevcut: v{VERSION}\nGitHub: {GITHUB_URL}"
+            else:
+                mesaj = f"Guncel versiyonu kullaniyorsunuz: v{VERSION}"
+            
+            messagebox.showinfo(self._t("update_title"), mesaj)
+        except Exception:
+            messagebox.showwarning(self._t("update_title"), self._t("update_error"))
 
     def _github_ac(self):
         try:
