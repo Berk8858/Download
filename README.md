@@ -36,7 +36,7 @@
 
 ### Windows (Kurulumsuz)
 
-[**Multi-Downloader-v1.5.1.exe**](https://github.com/Berk8858/Download/releases/download/v1.5.1/Multi-Downloader-v1.5.1.exe) dosyasini indirin, calistirin. Python gerekmez.
+[**Multi-Downloader-v1.5.2.exe**](https://github.com/Berk8858/Download/releases/download/v1.5.2/Multi-Downloader-v1.5.2.exe) dosyasini indirin, calistirin. Python gerekmez.
 
 ### Linux
 
