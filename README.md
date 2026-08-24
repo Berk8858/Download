@@ -2,7 +2,7 @@
 
 1000+ siteden video indirme araci.
 
-![Versiyon](https://img.shields.io/badge/versiyon-1.5.3-blue)
+![Versiyon](https://img.shields.io/badge/versiyon-1.6K-blue)
 ![Lisans](https://img.shields.io/badge/lisans-MIT-green)
 ![Linux](https://img.shields.io/badge/linux-tum%20dag%20t%20mlar-yellow)
 ![Windows](https://img.shields.io/badge/windows-exe%20dosyasi-blue)
@@ -36,7 +36,7 @@
 
 ### Windows (Kurulumsuz)
 
-[**Multi-Downloader-v1.5.3.exe**](https://github.com/Berk8858/Download/releases/download/v1.5.3/Multi-Downloader.exe) dosyasini indirin, calistirin. Python gerekmez.
+[**Multi-Downloader-v1.6K.exe**](https://github.com/Berk8858/Download/releases/download/v1.6K/Multi-Downloader.exe) dosyasini indirin, calistirin. Python gerekmez.
 
 ### Linux
 

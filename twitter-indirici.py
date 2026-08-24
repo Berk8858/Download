@@ -3,7 +3,7 @@
 Multi Downloader - GUI
 yt-dlp tabanli coklu platform video indirici
 
-=== VERSIYON 1.5 (2026-08-24) ===
+=== VERSIYON v1.6K (2026-08-25) ===
 
 DESTEKLENEN PLATFORMLAR:
   YouTube, Instagram, TikTok, Facebook, Twitter/X, Reddit,
@@ -54,7 +54,7 @@ except ImportError:
 # ============================================================
 # VERSIYON
 # ============================================================
-VERSION = "1.5.2"
+VERSION = "1.6K"
 APP_NAME = "Multi Downloader"
 GITHUB_URL = "https://github.com/Berk8858/Download"
 
@@ -1591,9 +1591,21 @@ class TwitterIndirici(tk.Tk):
         self._log_yaz(self._t("log_cancel"))
         if self._ytdl is not None:
             try:
-                self._ytdl._progress_hooks = []
+                if hasattr(self._ytdl, '_progress_hooks'):
+                    self._ytdl._progress_hooks = []
             except Exception:
                 pass
+            try:
+                if hasattr(self._ytdl, 'kill'):
+                    self._ytdl.kill()
+                elif hasattr(self._ytdl, 'terminate'):
+                    self._ytdl.terminate()
+            except Exception:
+                pass
+        self.isleniyor = False
+        self.indir_btn.config(state="normal")
+        self.getir_btn.config(state="normal")
+        self.iptal_btn.config(state="disabled")
 
     def _islem_bitti(self, dosya):
         self.isleniyor = False
@@ -1721,7 +1733,7 @@ class TwitterIndirici(tk.Tk):
                         os.startfile(yeni_dosya)
                     else:
                         subprocess.Popen([yeni_dosya])
-                    self.master.after(500, self.master.destroy)
+                    self.after(500, self.destroy)
             else:
                 self._log_yaz("Python modu - .py kodu guncelleniyor...")
 
@@ -1752,7 +1764,7 @@ class TwitterIndirici(tk.Tk):
                         python_yolu = python_yolu.replace("pythonw", "python")
                     subprocess.Popen([python_yolu, mevcut_dosya] + sys.argv[1:],
                         cwd=mevcut_klasor)
-                    self.master.after(500, self.master.destroy)
+                    self.after(500, self.destroy)
 
         except Exception as e:
             messagebox.showerror(self._t("update_title"), f"Guncelleme hatasi:\n{e}")

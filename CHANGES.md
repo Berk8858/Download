@@ -1,5 +1,19 @@
 # Degisiklik Kaydi
 
+## v1.6K (2026-08-25)
+
+### Kritik Duzeltmeler
+- **self.master hatasi duzeltildi** — Guncelleme sonrasi program cope atma hatasi giderildi
+- **_iptal() duzeltildi** — Iptal edildiginde arka plan process'i artik dogru olduruluyor
+- **GitHub Actions permissions eklendi** — Release olusturma artik calisacak
+- **Versiyon tutarsizligi giderildi** — Tum dosyalarda v1.6K olarak guncellendi
+
+### Iyilestirmeler
+- Iptal butonu artik durumunu dogru guncelliyor
+- Process yonetimi guclendirildi
+
+---
+
 ## v1.5.3 (2026-08-25)
 
 ### Yeni Ozellikler
