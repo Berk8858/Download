@@ -2,9 +2,10 @@
 
 1000+ siteden video indirme araci.
 
-![Versiyon](https://img.shields.io/badge/versiyon-1.5-blue)
+![Versiyon](https://img.shields.io/badge/versiyon-1.5.1-blue)
 ![Lisans](https://img.shields.io/badge/lisans-MIT-green)
 ![Linux](https://img.shields.io/badge/linux-tum%20dag%20t%20mlar-yellow)
+![Windows](https://img.shields.io/badge/windows-exe%20dosyasi-blue)
 
 ## Desteklenen Platformlar
 
@@ -29,8 +30,15 @@
 - Coklu dil destegi (7 dil)
 - Otomatik tarayici algilama
 - Linux uyumlu (Fedora, Ubuntu, Debian, Mint, Arch...)
+- Windows uyumlu (exe dosyasi, kurulum gerektirmez)
 
 ## Kurulum
+
+### Windows (Kurulumsuz)
+
+`Multi-Downloader.exe` dosyasini indirin, calistirin. Python gerekmez.
+
+### Linux
 
 ### Yontem 1: Otomatik Kurulum (Onerilen)
 
