@@ -35,20 +35,25 @@ jobs:
         run: |
           Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile "yt-dlp.exe"
       
+      - name: Get version from tag
+        id: version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
       - name: Build EXE
         run: |
-          python -m PyInstaller --onefile --noconsole --name Multi-Downloader --icon download-icon.ico --add-data "yt-dlp.exe;." --add-data "ffmpeg.exe;." --hidden-import yt_dlp --collect-submodules yt_dlp --clean --noconfirm twitter-indirici.py
-      
+          python -m PyInstaller --onefile --noconsole --name "Multi-Downloader-${{ steps.version.outputs.VERSION }}" --icon download-icon.ico --add-data "yt-dlp.exe;." --add-data "ffmpeg.exe;." --hidden-import yt_dlp --collect-submodules yt_dlp --clean --noconfirm twitter-indirici.py
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Multi-Downloader
-          path: dist/Multi-Downloader.exe
-      
+          name: Multi-Downloader-${{ steps.version.outputs.VERSION }}
+          path: dist/Multi-Downloader-${{ steps.version.outputs.VERSION }}.exe
+
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/Multi-Downloader.exe
+          files: dist/Multi-Downloader-${{ steps.version.outputs.VERSION }}.exe
           draft: false
           prerelease: false
