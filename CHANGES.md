@@ -1,5 +1,25 @@
 # Degisiklik Kaydi
 
+## v1.6K2 (2026-08-25)
+
+### Kritik Duzeltmeler
+- **Guncelleme mekanizmasi tamamen yeniden yazildi**
+- **Versiyon ayristirma hatasi duzeltildi** — "1.6K" gibi ekli versiyonlari dogru parse eder
+- **GitHub API dogru kullaniliyor** — Release asset'lerinden dogru download URL aliniyor
+- **SHA256 dogrulama eklendi** — Indirilen EXE'nin hash'i GitHub digest ile karsilastiriliyor
+- **Progress gosterimi** — Indirme sirasinda yuzde bazli ilerleme gosterilir
+- **User-Agent header** — GitHub API rate-limit onlenir
+- **EXE guncelleme (Windows)** — Batch script ile guvenli degistirme (calisan EXE uzerine yazi)
+- **Hata temizleme** — Basarisiz indirmelerde gecici dosyalar temizlenir
+- **Ayrintili loglama** — Her adim log dosyasina yazilir
+
+### Iyilestirmeler
+- Daha anlamlı hata mesajlari
+- Internet baglantisi hatasi ayri yakalanir
+- Dogrulama basarisizsa indirilen dosya silinir
+
+---
+
 ## v1.6K (2026-08-25)
 
 ### Kritik Duzeltmeler

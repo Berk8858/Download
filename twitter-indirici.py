@@ -3,7 +3,7 @@
 Multi Downloader - GUI
 yt-dlp tabanli coklu platform video indirici
 
-=== VERSIYON v1.6K (2026-08-25) ===
+=== VERSIYON v1.6K2 (2026-08-25) ===
 
 DESTEKLENEN PLATFORMLAR:
   YouTube, Instagram, TikTok, Facebook, Twitter/X, Reddit,
@@ -54,7 +54,7 @@ except ImportError:
 # ============================================================
 # VERSIYON
 # ============================================================
-VERSION = "1.6K"
+VERSION = "1.6K2"
 APP_NAME = "Multi Downloader"
 GITHUB_URL = "https://github.com/Berk8858/Download"
 
@@ -1660,92 +1660,297 @@ class TwitterIndirici(tk.Tk):
         )
         messagebox.showinfo(self._t("shortcuts_title"), mesaj)
 
-    def _guncelleme_kontrol(self):
+    @staticmethod
+    def _versiyon_ayristir(versiyon_str):
+        """Versiyon string'ini karsilastirilabilir tuple'a cevir.
+
+        '1.6K' -> (1, 6, 0)
+        '1.5.3' -> (1, 5, 3)
+        '1.5'   -> (1, 5, 0)
+        Gecersiz -> None
+        """
         try:
-            import urllib.request
-            import json
+            parts = []
+            for x in versiyon_str.split("."):
+                num = "".join(c for c in x if c.isdigit())
+                parts.append(int(num) if num else 0)
+            return tuple(parts) if parts else None
+        except (ValueError, AttributeError):
+            return None
 
+    def _guncelleme_kontrol(self):
+        import urllib.request
+        import json
+
+        self._log_yaz("Guncelleme kontrol ediliyor...")
+        self.durum_var.set(self._t("update_checking"))
+
+        try:
             url = "https://api.github.com/repos/Berk8858/Download/releases"
-            req = urllib.request.Request(url, headers={"Accept": "application/vnd.github.v3+json"})
-            data = json.loads(urllib.request.urlopen(req, timeout=15).read())
+            req = urllib.request.Request(url, headers={
+                "Accept": "application/vnd.github.v3+json",
+                "User-Agent": "Multi-Downloader",
+            })
+            response = urllib.request.urlopen(req, timeout=15)
+            data = json.loads(response.read())
 
-            tagler = []
+            if not data:
+                raise Exception("GitHub API bos yanit dondu")
+
+            versiyonlar = []
             for r in data:
                 tag = r.get("tag_name", "")
-                if tag.startswith("v") and "." in tag:
-                    tagler.append(tag[1:])
+                if tag.startswith("v"):
+                    ham = tag[1:]
+                    parsed = self._versiyon_ayristir(ham)
+                    if parsed is not None:
+                        versiyonlar.append((parsed, ham, r))
 
-            if not tagler:
-                raise Exception("No tags found")
+            if not versiyonlar:
+                raise Exception("Gecerli versiyon bulunamadi")
 
-            def versiyon_parse(v):
-                return tuple(int(x) for x in v.split("."))
+            en_yeni = max(versiyonlar, key=lambda x: x[0])
+            parsed_yeni, ham_yeni, release = en_yeni
 
-            son_versiyon = max(tagler, key=versiyon_parse)
+            self._son_release = release
 
-            if son_versiyon and son_versiyon != VERSION:
-                cevap = messagebox.askyesno(
+            mevcut_parsed = self._versiyon_ayristir(VERSION)
+            if mevcut_parsed is None:
+                raise Exception(f"Mevcut versiyon gecersiz: {VERSION}")
+
+            if parsed_yeni <= mevcut_parsed:
+                self._log_yaz(f"Guncel versiyon: v{VERSION}")
+                messagebox.showinfo(
                     self._t("update_title"),
-                    f"Yeni versiyon mevcut: v{son_versiyon}\n\nMevcut: v{VERSION}\n\nGuncellemek ister misiniz?"
+                    f"Guncel versiyonu kullaniyorsunuz.\n\nMevcut: v{VERSION}"
                 )
-                if cevap:
-                    self._guncelleme_indir(son_versiyon)
-            else:
-                messagebox.showinfo(self._t("update_title"), f"Guncel versiyonu kullaniyorsunuz: v{VERSION}")
-        except Exception:
+                return
+
+            asset_satirlari = ""
+            for asset in release.get("assets", []):
+                name = asset.get("name", "")
+                if name.lower().endswith(".exe") or "-linux-" in name or "-macos" in name:
+                    boyut = asset.get("size", 0) // 1024 // 1024
+                    asset_satirlari += f"\n  {name} ({boyut}MB)"
+
+            changelog = release.get("body", "") or ""
+            if changelog:
+                changelog = f"\n\nDegisiklikler:\n{changelog[:500]}"
+
+            mesaj = (
+                f"Yeni versiyon mevcut!\n\n"
+                f"Mevcut : v{VERSION}\n"
+                f"Son    : v{ham_yeni}"
+                f"{asset_satirlari}"
+                f"{changelog}\n\n"
+                f"Guncellemek ister misiniz?"
+            )
+
+            cevap = messagebox.askyesno(self._t("update_title"), mesaj)
+            if cevap:
+                self._guncelleme_indir(ham_yeni, release)
+
+        except urllib.error.URLError as e:
+            hata = f"Internet baglantisi hatasi:\n{e}"
+            self._log_yaz(f"HATA: {hata}")
+            messagebox.showwarning(self._t("update_title"), hata)
+        except Exception as e:
+            hata = f"Guncelleme kontrolu yapilamadi:\n{e}"
+            self._log_yaz(f"HATA: {hata}")
             messagebox.showwarning(self._t("update_title"), self._t("update_error"))
 
-    def _guncelleme_indir(self, versiyon):
+    def _guncelleme_indir(self, versiyon, release_data):
         import urllib.request
-        import subprocess
-        import sys
+        import hashlib
         import shutil
         import tempfile
+        import subprocess
 
         self._log_yaz(f"v{versiyon} indiriliyor...")
+        self.durum_var.set(f"v{versiyon} indiriliyor...")
+        yeni_dosya = None
 
         try:
-            self.durum_var.set(f"v{versiyon} guncelleniyor...")
-
-            mevcut_dosya = os.path.abspath(sys.argv[0])
-            mevcut_klasor = os.path.dirname(mevcut_dosya)
             frozen = getattr(sys, 'frozen', False)
 
             if frozen:
-                self._log_yaz("EXE modu - yeni EXE indiriliyor...")
-                exe_url = f"https://github.com/Berk8858/Download/releases/download/v{versiyon}/Multi-Downloader.exe"
-                yeni_dosya = os.path.join(tempfile.gettempdir(), f"Multi-Downloader-v{versiyon}.exe")
+                exe_asset = None
+                for asset in release_data.get("assets", []):
+                    if asset.get("name", "").lower().endswith(".exe"):
+                        exe_asset = asset
+                        break
 
-                self._log_yaz(f"Indiriliyor: {yeni_dosya}")
-                urllib.request.urlretrieve(exe_url, yeni_dosya)
+                if not exe_asset:
+                    raise Exception("Indirilebilir EXE dosyasi bulunamadi")
 
-                yeni_boyut = os.path.getsize(yeni_dosya)
-                if yeni_boyut < 1_000_000:
+                download_url = exe_asset["browser_download_url"]
+                beklenen_boyut = exe_asset.get("size", 0)
+
+                beklenen_hash = None
+                digest = exe_asset.get("digest", "")
+                if digest and ":" in digest:
+                    beklenen_hash = digest.split(":", 1)[1]
+
+                self._log_yaz(
+                    f"Dosya: {exe_asset['name']} "
+                    f"({beklenen_boyut // 1024 // 1024}MB)"
+                )
+
+                yeni_dosya = os.path.join(
+                    tempfile.gettempdir(),
+                    f"Multi-Downloader-v{versiyon}.exe"
+                )
+
+                self._log_yaz("Indiriliyor...")
+                req = urllib.request.Request(
+                    download_url,
+                    headers={"User-Agent": "Multi-Downloader"},
+                )
+                try:
+                    with urllib.request.urlopen(req, timeout=120) as resp:
+                        toplam = int(resp.headers.get("Content-Length", 0))
+                        indirilen = 0
+                        sha256 = hashlib.sha256()
+                        with open(yeni_dosya, "wb") as f:
+                            while True:
+                                chunk = resp.read(65536)
+                                if not chunk:
+                                    break
+                                f.write(chunk)
+                                sha256.update(chunk)
+                                indirilen += len(chunk)
+                                if toplam > 0:
+                                    yuzde = indirilen * 100 // toplam
+                                    self.durum_var.set(
+                                        f"Indiriliyor... %{yuzde}"
+                                    )
+                except Exception:
+                    urllib.request.urlretrieve(download_url, yeni_dosya)
+                    sha256 = hashlib.sha256()
+                    with open(yeni_dosya, "rb") as f:
+                        for chunk in iter(lambda: f.read(65536), b""):
+                            sha256.update(chunk)
+
+                indirilen_boyut = os.path.getsize(yeni_dosya)
+                if indirilen_boyut < 1_000_000:
                     os.remove(yeni_dosya)
-                    raise Exception("Indirilen dosya cok kucuk")
+                    raise Exception(
+                        f"Indirilen dosya cok kucuk ({indirilen_boyut} byte)"
+                    )
+                self._log_yaz(
+                    f"Indirme tamam ({indirilen_boyut // 1024 // 1024}MB)"
+                )
 
-                self._log_yaz(f"Indirme tamamlandi ({yeni_boyut // 1024 // 1024}MB)")
+                if beklenen_hash:
+                    self._log_yaz("SHA256 dogrulamasi yapiliyor...")
+                    gercek_hash = sha256.hexdigest()
+                    if gercek_hash.lower() != beklenen_hash.lower():
+                        os.remove(yeni_dosya)
+                        raise Exception(
+                            f"SHA256 dogrulamasi basarisiz!\n"
+                            f"Beklenen : {beklenen_hash}\n"
+                            f"Gercek   : {gercek_hash}"
+                        )
+                    self._log_yaz("SHA256 dogrulandi ✓")
+                else:
+                    self._log_yaz("Uyari: Hash dogrulamasi yok, atlaniyor")
 
-                cevap = messagebox.askyesno(self._t("update_title"),
-                    f"v{versiyon} indirildi!\n\nSimdi acilsin mi?")
-                if cevap:
-                    if sys.platform == "win32":
-                        os.startfile(yeni_dosya)
-                    else:
-                        subprocess.Popen([yeni_dosya])
+                mevcut_dosya = os.path.abspath(sys.argv[0])
+
+                cevap = messagebox.askyesno(
+                    self._t("update_title"),
+                    f"v{versiyon} indirildi ve dogrulandi!\n\n"
+                    f"Simdi guncellensin mi?\n"
+                    f"(Program yeniden baslatilacak)",
+                )
+                if not cevap:
+                    if os.path.exists(yeni_dosya):
+                        os.remove(yeni_dosya)
+                    return
+
+                if sys.platform == "win32":
+                    batch_icerik = (
+                        "@echo off\r\n"
+                        "timeout /t 2 /nobreak >nul\r\n"
+                        f'copy /Y "{yeni_dosya}" "{mevcut_dosya}"\r\n'
+                        f'start "" "{mevcut_dosya}"\r\n'
+                        'del "%~f0"\r\n'
+                    )
+                    batch_dosya = os.path.join(
+                        tempfile.gettempdir(),
+                        "update_multidownloader.bat",
+                    )
+                    with open(batch_dosya, "w", encoding="ascii") as bf:
+                        bf.write(batch_icerik)
+
+                    self._log_yaz("Guncelleme baslatiliyor...")
+                    subprocess.Popen([batch_dosya], shell=True)
+                    self.after(500, self.destroy)
+                else:
+                    mevcut_klasor = os.path.dirname(mevcut_dosya)
+                    yedek_dosya = mevcut_dosya + ".yedek"
+                    self._log_yaz(f"Yedekleniyor: {yedek_dosya}")
+                    shutil.copy2(mevcut_dosya, yedek_dosya)
+
+                    shutil.copy2(yeni_dosya, mevcut_dosya)
+                    os.chmod(mevcut_dosya, 0o755)
+                    self._log_yaz("Guncelleme tamam!")
+
+                    messagebox.showinfo(
+                        self._t("update_title"),
+                        f"v{versiyon} guncellendi!\n\n"
+                        f"Program yeniden baslatilacak.",
+                    )
+                    python_yolu = sys.executable
+                    if "pythonw" in python_yolu.lower():
+                        python_yolu = python_yolu.replace("pythonw", "python")
+                    subprocess.Popen(
+                        [python_yolu, mevcut_dosya] + sys.argv[1:],
+                        cwd=mevcut_klasor,
+                    )
                     self.after(500, self.destroy)
             else:
-                self._log_yaz("Python modu - .py kodu guncelleniyor...")
+                self._log_yaz("Python modu - .py guncelleniyor...")
 
-                raw_url = "https://raw.githubusercontent.com/Berk8858/Download/main/twitter-indirici.py"
-                try:
-                    data = urllib.request.urlopen(raw_url, timeout=30).read()
-                except Exception:
-                    raw_url = "https://github.com/Berk8858/Download/raw/main/twitter-indirici.py"
-                    data = urllib.request.urlopen(raw_url, timeout=30).read()
+                raw_url = (
+                    "https://raw.githubusercontent.com/"
+                    "Berk8858/Download/main/twitter-indirici.py"
+                )
+                data = None
+                for url in [
+                    raw_url,
+                    raw_url.replace("raw.githubusercontent.com",
+                                    "github.com/Berk8858/Download/raw"),
+                ]:
+                    try:
+                        req = urllib.request.Request(
+                            url,
+                            headers={"User-Agent": "Multi-Downloader"},
+                        )
+                        data = urllib.request.urlopen(req, timeout=30).read()
+                        break
+                    except Exception:
+                        continue
 
-                if len(data) < 1000:
-                    raise Exception("Indirilen dosya cok kucuk")
+                if data is None or len(data) < 1000:
+                    raise Exception(
+                        f"Indirilen dosya cok kucuk "
+                        f"({0 if data is None else len(data)} byte)"
+                    )
+
+                icerik = data.decode("utf-8", errors="ignore")
+                if "VERSION" not in icerik:
+                    raise Exception("Indirilen dosya gecerli gorunmuyor")
+
+                yeni_v = self._versiyon_ayristir(
+                    icerik.split('VERSION = "')[1].split('"')[0]
+                    if 'VERSION = "' in icerik else ""
+                )
+                if yeni_v is None:
+                    raise Exception("Yeni dosyada gecerli versiyon bulunamadi")
+
+                mevcut_dosya = os.path.abspath(sys.argv[0])
+                mevcut_klasor = os.path.dirname(mevcut_dosya)
 
                 yedek_dosya = mevcut_dosya + ".yedek"
                 self._log_yaz(f"Yedekleniyor: {yedek_dosya}")
@@ -1754,20 +1959,32 @@ class TwitterIndirici(tk.Tk):
                 with open(mevcut_dosya, "wb") as f:
                     f.write(data)
 
-                self._log_yaz("Guncelleme tamamlandi!")
+                self._log_yaz("Guncelleme tamam!")
 
-                cevap = messagebox.askyesno(self._t("update_title"),
-                    f"v{versiyon} guncellendi!\n\nProgram yeniden baslatilacak.\nDevam edilsin mi?")
+                cevap = messagebox.askyesno(
+                    self._t("update_title"),
+                    f"v{versiyon} guncellendi!\n\n"
+                    f"Program yeniden baslatilacak.\nDevam edilsin mi?",
+                )
                 if cevap:
                     python_yolu = sys.executable
                     if "pythonw" in python_yolu.lower():
                         python_yolu = python_yolu.replace("pythonw", "python")
-                    subprocess.Popen([python_yolu, mevcut_dosya] + sys.argv[1:],
-                        cwd=mevcut_klasor)
+                    subprocess.Popen(
+                        [python_yolu, mevcut_dosya] + sys.argv[1:],
+                        cwd=mevcut_klasor,
+                    )
                     self.after(500, self.destroy)
 
         except Exception as e:
-            messagebox.showerror(self._t("update_title"), f"Guncelleme hatasi:\n{e}")
+            if yeni_dosya and os.path.exists(yeni_dosya):
+                try:
+                    os.remove(yeni_dosya)
+                except OSError:
+                    pass
+            hata = f"Guncelleme hatasi:\n{e}"
+            self._log_yaz(f"HATA: {hata}")
+            messagebox.showerror(self._t("update_title"), hata)
 
     def _github_ac(self):
         try:
