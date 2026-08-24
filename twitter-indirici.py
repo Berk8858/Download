@@ -1622,39 +1622,87 @@ class TwitterIndirici(tk.Tk):
         try:
             import subprocess
             sonuc = subprocess.run(
-                ["git", "ls-remote", "--tags", "git@github.com:Berk8858/Download.git"],
-                capture_output=True, text=True, timeout=10
+                ["git", "ls-remote", "--tags", "https://github.com/Berk8858/Download.git"],
+                capture_output=True, text=True, timeout=15
             )
             if sonuc.returncode != 0:
                 raise Exception("git ls-remote failed")
             
-            # Son tag'i bul
             tagler = []
             for satir in sonuc.stdout.strip().split("\n"):
                 if satir and "refs/tags/v" in satir:
                     parts = satir.split("refs/tags/v")
                     if len(parts) > 1:
                         tag = parts[1].split("^{}")[0].strip()
-                        if tag:
+                        if tag and "." in tag:
                             tagler.append(tag)
             
             if not tagler:
                 raise Exception("No tags found")
             
-            # En son versiyonu bul
             def versiyon_parse(v):
                 return tuple(int(x) for x in v.split("."))
             
             son_versiyon = max(tagler, key=versiyon_parse)
             
             if son_versiyon and son_versiyon != VERSION:
-                mesaj = f"Yeni versiyon mevcut: v{son_versiyon}\n\nMevcut: v{VERSION}\nGitHub: {GITHUB_URL}"
+                cevap = messagebox.askyesno(
+                    self._t("update_title"),
+                    f"Yeni versiyon mevcut: v{son_versiyon}\n\nMevcut: v{VERSION}\n\nGuncellemek ister misiniz?"
+                )
+                if cevap:
+                    self._guncelleme_indir(son_versiyon)
             else:
-                mesaj = f"Guncel versiyonu kullaniyorsunuz: v{VERSION}"
-            
-            messagebox.showinfo(self._t("update_title"), mesaj)
+                messagebox.showinfo(self._t("update_title"), f"Guncel versiyonu kullaniyorsunuz: v{VERSION}")
         except Exception:
             messagebox.showwarning(self._t("update_title"), self._t("update_error"))
+
+    def _guncelleme_indir(self, versiyon):
+        import urllib.request
+        import tempfile
+        import zipfile
+        import shutil
+        import sys
+
+        self._log_yaz(f"v{versiyon} indiriliyor...")
+
+        try:
+            exe_klasor = os.path.dirname(os.path.abspath(sys.argv[0]))
+            exe_dosya = os.path.abspath(sys.argv[0])
+            exe_adi = os.path.basename(exe_dosya)
+
+            if sys.platform == "win32":
+                if not exe_dosya.lower().endswith(".exe"):
+                    messagebox.showinfo(self._t("update_title"),
+                        f"Yeni versiyon: v{versiyon}\n\nIndirme: {GITHUB_URL}")
+                    return
+
+                url = f"https://github.com/Berk8858/Download/releases/download/v{versiyon}/Multi-Downloader.exe"
+                gecici = os.path.join(tempfile.gettempdir(), f"Multi-Downloader-v{versiyon}.exe")
+
+                self.durum_var.set(f"v{versiyon} indiriliyor...")
+                urllib.request.urlretrieve(url, gecici)
+
+                yeni_boyut = os.path.getsize(gecici)
+                if yeni_boyut < 1_000_000:
+                    os.remove(gecici)
+                    messagebox.showerror(self._t("update_title"), "Indirme basarisiz - dosya cok kucuk")
+                    return
+
+                yeni_yol = os.path.join(exe_klasor, f"Multi-Downloader-v{versiyon}.exe")
+                shutil.move(gecici, yeni_yol)
+
+                cevap = messagebox.askyesno(self._t("update_title"),
+                    f"v{versiyon} indirildi!\n\n{yeni_yol}\n\nSimdi acilsin mi?")
+                if cevap:
+                    os.startfile(yeni_yol)
+                    self.master.after(500, self.master.destroy)
+            else:
+                messagebox.showinfo(self._t("update_title"),
+                    f"Yeni versiyon: v{versiyon}\n\nIndirme: {GITHUB_URL}")
+
+        except Exception as e:
+            messagebox.showerror(self._t("update_title"), f"Guncelleme hatasi:\n{e}")
 
     def _github_ac(self):
         try:
