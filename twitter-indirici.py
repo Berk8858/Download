@@ -2062,7 +2062,13 @@ class TwitterIndirici(tk.Tk):
                         bf.write(batch_icerik)
 
                     self._log_yaz("Guncelleme baslatiliyor...")
-                    subprocess.Popen([batch_dosya], shell=True)
+                    try:
+                        subprocess.Popen(
+                            [batch_dosya], shell=True,
+                            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+                        )
+                    except Exception:
+                        subprocess.Popen([batch_dosya], shell=True)
                     self.after(500, self.destroy)
                 else:
                     mevcut_klasor = os.path.dirname(mevcut_dosya)
@@ -2082,10 +2088,17 @@ class TwitterIndirici(tk.Tk):
                     python_yolu = sys.executable
                     if "pythonw" in python_yolu.lower():
                         python_yolu = python_yolu.replace("pythonw", "python")
-                    subprocess.Popen(
-                        [python_yolu, mevcut_dosya] + sys.argv[1:],
-                        cwd=mevcut_klasor,
-                    )
+                    try:
+                        subprocess.Popen(
+                            [python_yolu, mevcut_dosya] + sys.argv[1:],
+                            cwd=mevcut_klasor,
+                            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+                        )
+                    except Exception:
+                        subprocess.Popen(
+                            [python_yolu, mevcut_dosya] + sys.argv[1:],
+                            cwd=mevcut_klasor,
+                        )
                     self.after(500, self.destroy)
             else:
                 self._log_yaz("Python modu - .py guncelleniyor...")
@@ -2148,10 +2161,17 @@ class TwitterIndirici(tk.Tk):
                     python_yolu = sys.executable
                     if "pythonw" in python_yolu.lower():
                         python_yolu = python_yolu.replace("pythonw", "python")
-                    subprocess.Popen(
-                        [python_yolu, mevcut_dosya] + sys.argv[1:],
-                        cwd=mevcut_klasor,
-                    )
+                    try:
+                        subprocess.Popen(
+                            [python_yolu, mevcut_dosya] + sys.argv[1:],
+                            cwd=mevcut_klasor,
+                            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+                        )
+                    except Exception:
+                        subprocess.Popen(
+                            [python_yolu, mevcut_dosya] + sys.argv[1:],
+                            cwd=mevcut_klasor,
+                        )
                     self.after(500, self.destroy)
 
         except Exception as e:
