@@ -3,13 +3,14 @@
 Multi Downloader - GUI
 yt-dlp tabanli coklu platform video indirici
 
-=== VERSIYON v1.6K2 (2026-08-25) ===
+=== VERSIYON v1.6K3 (2026-08-25) ===
 
 DESTEKLENEN PLATFORMLAR:
   YouTube, Instagram, TikTok, Facebook, Twitter/X, Reddit,
   Pinterest, Vimeo, Dailymotion, Twitch, ve 1000+ site (yt-dlp)
 
 DEGISIKLIKLER:
+  - v1.6K3: Acik/Koyu tema secenegi (Gorunum menusu, JSON tercihi)
   - v1.5: Multi Downloader olarak yeniden adlandirma
   - v1.5: Coklu platform destegi (YouTube, Instagram, TikTok, vb.)
   - v1.5: Platform otomatik algilama
@@ -24,6 +25,7 @@ Lisans: MIT
 """
 
 import os
+import json
 import locale
 import shutil
 import subprocess
@@ -54,7 +56,7 @@ except ImportError:
 # ============================================================
 # VERSIYON
 # ============================================================
-VERSION = "1.6K2"
+VERSION = "1.6K3"
 APP_NAME = "Multi Downloader"
 GITHUB_URL = "https://github.com/Berk8858/Download"
 
@@ -80,6 +82,65 @@ BAYRAK_RENKLERI = {
     "ko": "#003478",
     "zh": "#DE2910",
 }
+
+# ============================================================
+# TEMA (ACIK / KOYU)
+# ============================================================
+TEMA_ISIMLERI = {
+    "acik": {
+        "arka": "#f5f5f5",
+        "yazi": "#1a1a1a",
+        "buton_bg": "#e1e1e1",
+        "baslik": "#4a90d9",
+        "giris_bg": "#ffffff",
+        "log_bg": "#ffffff",
+        "kenarlik": "#c9c9c9",
+        "buton_ustune": "#d4d4d4",
+        "buton_pasif": "#ececec",
+        "secim_bg": "#4a90d9",
+        "pasif_yazi": "#8a8a8a",
+    },
+    "koyu": {
+        "arka": "#2b2b2b",
+        "yazi": "#e0e0e0",
+        "buton_bg": "#404040",
+        "baslik": "#6ab0ff",
+        "giris_bg": "#1e1e1e",
+        "log_bg": "#1e1e1e",
+        "kenarlik": "#505050",
+        "buton_ustune": "#4d4d4d",
+        "buton_pasif": "#333333",
+        "secim_bg": "#3a6ea5",
+        "pasif_yazi": "#7f7f7f",
+    },
+}
+TEMA_VARSAYILAN = "acik"
+
+AYAR_DOSYASI = Path.home() / ".multi_downloader_ayar.json"
+
+
+def tema_tercihi_yukle():
+    """JSON ayar dosyasindan tema tercihini yukle"""
+    try:
+        if AYAR_DOSYASI.exists():
+            veri = json.loads(AYAR_DOSYASI.read_text(encoding="utf-8"))
+            tema = veri.get("tema")
+            if tema in TEMA_ISIMLERI:
+                return tema
+    except Exception:
+        pass
+    return TEMA_VARSAYILAN
+
+
+def tema_tercihi_kaydet(tema_adi):
+    """Tema tercihini JSON ayar dosyasina kaydet"""
+    try:
+        AYAR_DOSYASI.write_text(
+            json.dumps({"tema": tema_adi}, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    except Exception:
+        pass
 
 # ============================================================
 # CEVIRILER (7 DIL)
@@ -170,6 +231,9 @@ CEVIRILER = {
         "update_new": "Yeni versiyon mevcut!",
         "update_error": "Guncelleme kontrolu yapilamadi",
         "lang_label": "Dil:",
+        "menu_gorunum": "Gorunum",
+        "tema_acik": "Acik Tema",
+        "tema_koyu": "Koyu Tema",
     },
     "es": {
         "app_title": "Multi Downloader",
@@ -254,6 +318,9 @@ CEVIRILER = {
         "update_new": "Nueva version disponible!",
         "update_error": "No se pudo buscar actualizaciones",
         "lang_label": "Idioma:",
+        "menu_gorunum": "Apariencia",
+        "tema_acik": "Tema Claro",
+        "tema_koyu": "Tema Oscuro",
     },
     "pt": {
         "app_title": "Multi Downloader",
@@ -338,6 +405,9 @@ CEVIRILER = {
         "update_new": "Nova versao disponivel!",
         "update_error": "Nao foi possivel verificar atualizacoes",
         "lang_label": "Idioma:",
+        "menu_gorunum": "Aparencia",
+        "tema_acik": "Tema Claro",
+        "tema_koyu": "Tema Escuro",
     },
     "it": {
         "app_title": "Multi Downloader",
@@ -422,6 +492,9 @@ CEVIRILER = {
         "update_new": "Nuova versione disponibile!",
         "update_error": "Impossibile controllare gli aggiornamenti",
         "lang_label": "Lingua:",
+        "menu_gorunum": "Aspetto",
+        "tema_acik": "Tema Chiaro",
+        "tema_koyu": "Tema Scuro",
     },
     "ja": {
         "app_title": "Multi Downloader",
@@ -506,6 +579,9 @@ CEVIRILER = {
         "update_new": "新しいバージョンがあります！",
         "update_error": "アップデートを確認できませんでした",
         "lang_label": "言語:",
+        "menu_gorunum": "表示",
+        "tema_acik": "ライトテーマ",
+        "tema_koyu": "ダークテーマ",
     },
     "ko": {
         "app_title": "Multi Downloader",
@@ -590,6 +666,9 @@ CEVIRILER = {
         "update_new": "새 버전이 있습니다!",
         "update_error": "업데이트를 확인할 수 없습니다",
         "lang_label": "언어:",
+        "menu_gorunum": "보기",
+        "tema_acik": "라이트 테마",
+        "tema_koyu": "다크 테마",
     },
     "zh": {
         "app_title": "Multi Downloader",
@@ -674,6 +753,9 @@ CEVIRILER = {
         "update_new": "有新版本！",
         "update_error": "无法检查更新",
         "lang_label": "语言:",
+        "menu_gorunum": "外观",
+        "tema_acik": "浅色主题",
+        "tema_koyu": "深色主题",
     },
 }
 
@@ -926,6 +1008,7 @@ class TwitterIndirici(tk.Tk):
         else:
             self.dil = os_dil_algila()
         self.celevriler = CEVIRILER[self.dil]
+        self.tema = tema_tercihi_yukle()
         
         self.title(f"{self.celevriler['app_title']} v{VERSION}")
         self.geometry("720x750")
@@ -947,6 +1030,83 @@ class TwitterIndirici(tk.Tk):
     def _t(self, anahtar):
         """Ceviri getir"""
         return self.celevriler.get(anahtar, anahtar)
+
+    def tema_ayarla(self, tema_adi):
+        """Temayi degistir, tercihi JSON'a kaydet ve tum widget'lara uygula"""
+        if tema_adi not in TEMA_ISIMLERI:
+            return
+        self.tema = tema_adi
+        if hasattr(self, "tema_var"):
+            self.tema_var.set(tema_adi)
+        tema_tercihi_kaydet(tema_adi)
+        self._tema_uygula()
+
+    def _tema_uygula(self):
+        """Aktif temanin renklerini ttk.Style ve tum widget'lara uygula"""
+        r = TEMA_ISIMLERI[self.tema]
+
+        self.configure(bg=r["arka"])
+
+        style = ttk.Style(self)
+        try:
+            if style.theme_use() != "clam":
+                style.theme_use("clam")
+        except Exception:
+            pass
+        style.configure(".", background=r["arka"], foreground=r["yazi"],
+                        fieldbackground=r["giris_bg"], troughcolor=r["arka"],
+                        bordercolor=r["kenarlik"], lightcolor=r["arka"],
+                        darkcolor=r["buton_bg"],
+                        selectbackground=r["secim_bg"],
+                        selectforeground="#ffffff")
+        style.configure("TFrame", background=r["arka"])
+        style.configure("TLabel", background=r["arka"], foreground=r["yazi"])
+        style.configure("TButton", background=r["buton_bg"], foreground=r["yazi"])
+        style.map("TButton",
+                  background=[("disabled", r["buton_pasif"]),
+                              ("pressed", r["baslik"]),
+                              ("active", r["buton_ustune"])],
+                  foreground=[("disabled", r["pasif_yazi"])])
+        style.configure("TEntry", fieldbackground=r["giris_bg"],
+                        foreground=r["yazi"], insertcolor=r["yazi"])
+        style.map("TEntry",
+                  fieldbackground=[("readonly", r["giris_bg"])],
+                  foreground=[("disabled", r["pasif_yazi"])])
+        style.configure("TScrollbar", background=r["buton_bg"],
+                        troughcolor=r["arka"], arrowcolor=r["yazi"])
+        style.map("TScrollbar",
+                  background=[("active", r["buton_ustune"])])
+        style.configure("Horizontal.TProgressbar", background=r["baslik"],
+                        troughcolor=r["arka"], lightcolor=r["baslik"],
+                        darkcolor=r["baslik"], bordercolor=r["arka"])
+
+        # tk tabanli widgetlar (Listbox + log)
+        self.liste.config(bg=r["giris_bg"], fg=r["yazi"],
+                          selectbackground=r["secim_bg"],
+                          selectforeground="#ffffff",
+                          highlightbackground=r["kenarlik"],
+                          highlightcolor=r["baslik"],
+                          disabledforeground=r["pasif_yazi"])
+        self.log.config(bg=r["log_bg"], fg=r["yazi"],
+                        insertbackground=r["yazi"],
+                        highlightbackground=r["kenarlik"],
+                        highlightcolor=r["baslik"])
+        try:
+            self.log.vbar.config(background=r["buton_bg"],
+                                 troughcolor=r["arka"],
+                                 activebackground=r["buton_ustune"])
+        except Exception:
+            pass
+
+        # Menu cubugu ve alt menuler
+        for menu in (self.menu_cubugu, self.yardim_menu,
+                     self.dil_menu, self.gorunum_menu):
+            try:
+                menu.config(bg=r["arka"], fg=r["yazi"],
+                            activebackground=r["baslik"],
+                            activeforeground="#ffffff")
+            except Exception:
+                pass
 
     def _arayuz_kur(self):
         # Menu cubugu
@@ -983,6 +1143,21 @@ class TwitterIndirici(tk.Tk):
         self.yardim_menu.add_separator()
         self.yardim_menu.add_command(label=self._t("menu_update"), command=self._guncelleme_kontrol)
         self.yardim_menu.add_command(label=self._t("menu_github"), command=self._github_ac)
+
+        # Gorunum menusu (tema secimi)
+        self.tema_var = tk.StringVar(value=self.tema)
+        self.gorunum_menu = tk.Menu(self.menu_cubugu, tearoff=0)
+        self.menu_cubugu.add_cascade(label=self._t("menu_gorunum"), menu=self.gorunum_menu)
+        self.gorunum_menu.add_radiobutton(
+            label=self._t("tema_acik"),
+            variable=self.tema_var, value="acik",
+            command=lambda: self.tema_ayarla("acik"),
+        )
+        self.gorunum_menu.add_radiobutton(
+            label=self._t("tema_koyu"),
+            variable=self.tema_var, value="koyu",
+            command=lambda: self.tema_ayarla("koyu"),
+        )
 
         pad = {"padx": 12, "pady": 4}
 
@@ -1049,6 +1224,9 @@ class TwitterIndirici(tk.Tk):
         self.log = ScrolledText(self, height=7,
                                 font=("Consolas", 9), wrap="word")
         self.log.pack(fill="both", expand=True, padx=12, pady=(4, 10))
+
+        # Kayitli temayi uygula
+        self._tema_uygula()
 
     def _dil_ayarla(self, yeni_dil):
         """Dili degistir ve yeniden baslat"""
