@@ -3,14 +3,14 @@
 Multi Downloader - GUI
 yt-dlp tabanli coklu platform video indirici
 
-=== VERSIYON v1.6K3 (2026-08-25) ===
+=== VERSIYON v1.6K6 (2026-08-26) ===
 
 DESTEKLENEN PLATFORMLAR:
   YouTube, Instagram, TikTok, Facebook, Twitter/X, Reddit,
   Pinterest, Vimeo, Dailymotion, Twitch, ve 1000+ site (yt-dlp)
 
 DEGISIKLIKLER:
-  - v1.6K3: Acik/Koyu tema secenegi (Gorunum menusu, JSON tercihi)
+  - v1.6K6: Acik/Koyu tema secenegi (Gorunum menusu, JSON tercihi)
   - v1.5: Multi Downloader olarak yeniden adlandirma
   - v1.5: Coklu platform destegi (YouTube, Instagram, TikTok, vb.)
   - v1.5: Platform otomatik algilama
@@ -56,7 +56,7 @@ except ImportError:
 # ============================================================
 # VERSIYON
 # ============================================================
-VERSION = "1.6K3"
+VERSION = "1.6K6"
 APP_NAME = "Multi Downloader"
 GITHUB_URL = "https://github.com/Berk8858/Download"
 
