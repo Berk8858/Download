@@ -1,4 +1,4 @@
-name: Build Windows EXE
+name: Build EXE
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,12 +42,12 @@ jobs:
 
       - name: Build EXE
         run: |
-          python -m PyInstaller --onefile --noconsole --name "Multi-Downloader-${{ steps.version.outputs.VERSION }}" --icon download-icon.ico --add-data "yt-dlp.exe;." --add-data "ffmpeg.exe;." --hidden-import yt_dlp --collect-submodules yt_dlp --clean --noconfirm twitter-indirici.py
+          python -m PyInstaller --onefile --windowed --name "Multi-Downloader-${{ steps.version.outputs.VERSION }}" --icon download-icon.ico --add-data "yt-dlp.exe;." --add-data "ffmpeg.exe;." --hidden-import yt_dlp --collect-submodules yt_dlp --clean --noconfirm twitter-indirici.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Multi-Downloader-${{ steps.version.outputs.VERSION }}
+          name: Multi-Downloader-${{ steps.version.outputs.VERSION }}-Windows
           path: dist/Multi-Downloader-${{ steps.version.outputs.VERSION }}.exe
 
       - name: Create Release
@@ -55,5 +55,46 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/Multi-Downloader-${{ steps.version.outputs.VERSION }}.exe
+          draft: false
+          prerelease: false
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller==5.13.2 yt-dlp
+      
+      - name: Install ffmpeg
+        run: |
+          brew install ffmpeg
+      
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Build APP
+        run: |
+          python -m PyInstaller --onefile --windowed --name "Multi-Downloader-${{ steps.version.outputs.VERSION }}" --hidden-import yt_dlp --collect-submodules yt_dlp --clean --noconfirm twitter-indirici.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Multi-Downloader-${{ steps.version.outputs.VERSION }}-macOS
+          path: dist/Multi-Downloader-${{ steps.version.outputs.VERSION }}
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Multi-Downloader-${{ steps.version.outputs.VERSION }}
           draft: false
           prerelease: false
